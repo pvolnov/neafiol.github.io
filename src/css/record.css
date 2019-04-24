@@ -1,0 +1,94 @@
+.imgblock{
+    /*max-height: 100px;*/
+}
+.rimage{
+    max-height: 200px;
+    width: 50%;
+    object-fit: cover;
+    object-position: center;
+}
+.textarea{
+    transition: 0.4s;
+}
+.fulltextarea{
+    transition: 0.4s;
+    height: auto;
+    font-optical-sizing: inherit;
+    margin-top: 20px;
+}
+.fullphoto{
+    width: 100%;
+    max-height: 350px;
+    object-fit: cover;
+    object-position: center;
+    transition: 0.1s;
+    border-top: #929eb0 6px solid;
+    border-bottom: #929eb0 6px solid;
+}
+.normalfullphoto{
+    width: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+.postheader{
+    margin-bottom: -25px;
+}
+.text_record_field{
+    /*margin-bottom: -10px;*/
+}
+.hashtag{
+    color: #2a5885;
+    font-style: revert;
+}
+.showfullphoto{
+    max-height: none;
+    border-top: none;
+    border-bottom: none;
+}
+.allscreenphoto{
+    /*position: fixed; z-index: 10;*/
+    transition: 0.4s;
+    /*top: 0; left: 0; bottom: 0; right: 0;*/
+    width: 100%;
+    max-height: none;
+
+    margin: auto;
+    border-radius: 2px;
+    box-shadow: 0 0 200px #000, 0 0 0 1000px rgba(127, 127, 128, 0);
+    -webkit-box-shadow: 0 0 200px #000, 0 0 0 1000px rgb(0,0,0);
+    -moz-box-shadow: 0 0 200px #000, 0 0 0 1000px rgb(0,0,0);
+
+}
+.show_all_text{
+    -ms-user-select: none;
+    -moz-user-select: none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    user-select: none;
+    font-weight: normal;
+    text-decoration: none;
+    color: #929eb0;
+}
+img:focus {
+    position: fixed; z-index: 100;
+    transition: 0.1s;
+    top: 0; left: 0; bottom: 0; right: 0;
+    width: 99%; max-width: 100%;
+    height: 200px;
+    margin: auto;
+    background: white;
+    box-shadow: 0 0 200px #000, 0 0 0 1000px rgba(127, 127, 128, 0);
+    border: black 3px solid;
+    -webkit-box-shadow: 0 0 200px #000, 0 0 0 1000px rgb(0,0,0);
+    -moz-box-shadow: 0 0 200px #000, 0 0 0 1000px rgb(0,0,0);
+}
+
+img[tabindex="0"]:focus, /* Привязка на возврат фото в привычное состояние после клика на увеличенное */
+img[tabindex="0"]:focus ~ * {
+    cursor: zoom-out;
+    pointer-events: none;
+}
+a {
+    color: #2a5885;
+
+}

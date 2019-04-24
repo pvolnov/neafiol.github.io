@@ -1,0 +1,52 @@
+.toast{
+  margin-top: 15%;
+}
+.atoast{
+  margin-top: 3px;
+}
+.ephoto{
+  width: 100%;
+  /*margin: 2%;*/
+  margin-top: 20%;
+}
+.etext{
+  text-align: center;
+  padding-left: 15%;
+  padding-right: 15%;
+  font-family: 'Roboto', sans-serif;
+  color: #2a5885;
+  font-size: 20px;
+
+}
+.etext2{
+  text-align: center;
+  padding-left: 15%;
+  padding-right: 15%;
+  font-style: oblique;
+  font-family: 'Roboto', sans-serif;
+  color: #2a5885;
+  font-size: 16px;
+}
+.constant_text{
+  color: var(--text_secondary);
+}
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently
+                              supported by Chrome and Opera */
+}
+.textarea{
+  maxlength:"240"
+}
+.activ_ico{
+  /*color: var(--text-primary);*/
+  color: var(--attach_picker_tab_active_background);
+}
+.passive_ico{
+  color: var(--tabbar_inactive_icon);
+  border-radius: 5px ;
+}

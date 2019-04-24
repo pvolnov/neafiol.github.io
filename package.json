@@ -1,0 +1,47 @@
+{
+  "name": "Telard",
+  "version": "1.0.0",
+  "description": "App for indexing content in Telegramm",
+  "main": "index.js",
+  "scripts": {
+    "start": "cross-env PORT=8001 react-scripts start",
+    "build": "react-scripts build"
+  },
+  "keywords": [],
+  "author": "Petr Volnov",
+  "license": "MIT",
+  "devDependencies": {
+    "cross-env": "^5.2.0",
+    "react-hot-loader": "^4.3.4",
+    "react-scripts": "^2.1.8"
+  },
+  "dependencies": {
+    "@vkontakte/icons": "^1.4.3",
+    "@vkontakte/vkui": "^2.20.0",
+    "@vkontakte/vkui-connect": "^1.1.3",
+    "@vkontakte/vkui-connect-mock": "^1.0.61",
+    "@vkontakte/vkui-connect-promise": "^0.1.19",
+    "axios": "^0.18.0",
+    "core-js": "^2.5.7",
+    "js-cookie": "^2.2.0",
+    "object.omit": "^3.0.0",
+    "prop-types": "^15.6.2",
+    "react": "^16.8.6",
+    "react-alert": "^5.4.0",
+    "react-alert-template-basic": "^1.0.0",
+    "react-dom": "^16.8.6",
+    "react-images": "^0.5.19",
+    "react-photo-gallery": "^6.3.2",
+    "react-redux": "^6.0.1",
+    "react-toastify": "^5.0.0-rc.5",
+    "redux": "^4.0.1",
+    "redux-devtools": "^3.5.0",
+    "redux-thunk": "^2.3.0"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ]
+}
