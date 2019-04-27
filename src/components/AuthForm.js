@@ -104,7 +104,7 @@ export default class AuthForm extends React.Component {
     }
     onShoise(name){
         var user_info = this.state.user_info;
-        user_info[name]^=1;
+        user_info[name]=user_info[name]^1;
         console.log(user_info);
         this.setState({user_info:user_info})
     }
@@ -189,6 +189,16 @@ export default class AuthForm extends React.Component {
                 });
         }
         if (this.state.actPanel === "new_guest") {
+            var nul=true;
+            for(var u in this.state.user_info){
+                if(this.state.user_info[u]===1)
+                    nul=false;
+            }
+            if(nul){
+                this.showtoast("Выберите хотя бы одну категорию",toast.TYPE.ERROR);
+                this.setState({popout:null});
+                return;
+            }
             this.httpClient.get(HOST + '/auth/', {
                 params: {
                     page: 3,
@@ -225,7 +235,7 @@ export default class AuthForm extends React.Component {
                     main.setState({
                         popout: null,
                     });
-                    main.showtoast("Ошибка на сервере, опробуй позже",toast.TYPE.ERROR)
+                    main.showtoast("Ошибка на сервере, попробуй позже",toast.TYPE.ERROR)
 
             });
         }
@@ -374,7 +384,7 @@ export default class AuthForm extends React.Component {
                     </FormStatus>
                     }
                     <FormLayoutGroup top="Введите код подтверждения" bottom={ALERT_AUTH_TEXT}>
-                        <Input type="number" onChange={this.onChange} value={this.state.code} name={"code"} placeholder={"Код подтверждения"}/>
+                        <Input type="tel" onChange={this.onChange} value={this.state.code} name={"code"} placeholder={"Код подтверждения"}/>
                         <Button onClick={this.auth} size="xl">Войти</Button>
                     </FormLayoutGroup>
 

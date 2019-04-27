@@ -185,6 +185,8 @@ export default class Setting extends React.Component {
     }
     componentDidMount() {
         document.documentElement.scrollTop=0;
+        connect.send("VKWebAppScroll", {"top":0});
+
     }
 
     remove(group_id){
@@ -410,6 +412,7 @@ export default class Setting extends React.Component {
         if(search.length>20){
             return ;
         }
+        this.state.searchlen=search.length;
         var main = this;
         axios.get(HOST + '/user/', {
             params: {
@@ -607,7 +610,7 @@ export default class Setting extends React.Component {
                 <Search autoFocus={true}
                       after={SETTING_UPDATE_CANCLE} onChange={this.search} />
                 <Group title={SETTING_FIND_GROUP_TITLE}>
-                    <List>
+                    <List >
                         {
                             this.state.searchGrupList.map(function (gr, i) {
                                 return (
@@ -615,8 +618,13 @@ export default class Setting extends React.Component {
                                 );
                             })
                         }
+
                     </List>
+
                 </Group>
+                {this.state.searchGrupList.length === 0&& this.state.searchlen>0 &&
+                    <Footer>Подходящих групп не найдено</Footer>
+                }
             </Panel>
 
 

@@ -1,7 +1,7 @@
 import React from "react";
 import axios from "axios";
 import Record from "../components/Record";
-import {CellButton,Tooltip, PullToRefresh,Group, Panel, PanelHeader, ScreenSpinner, View} from '@vkontakte/vkui';
+import {CellButton,Tooltip,Footer, PullToRefresh,Group, Panel, PanelHeader, ScreenSpinner, View} from '@vkontakte/vkui';
 import Cookies from "js-cookie";
 import {HOST,STATISTOC_HOST} from '../constants/config'
 import connect from '@vkontakte/vkui-connect-promise';
@@ -23,6 +23,7 @@ export default  class RecordList extends React.Component {
             menu:[],//list of our records
             poput:null,
             fetching: false,
+            isuploading:true,
             fullphoto:{url:""}
         };
 
@@ -34,7 +35,6 @@ export default  class RecordList extends React.Component {
         this.closeToast = this.closeToast.bind(this);
 
         this.cond={
-            isuploading:false,
             isnew:true
         };
 
@@ -57,6 +57,8 @@ export default  class RecordList extends React.Component {
     }
     componentDidMount() {
         document.documentElement.scrollTop=this.store.y;
+        connect.send("VKWebAppScroll", {"top": this.store.y});
+
         var main=this;
         window.onscroll = ()=> {
             var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement ).scrollTop;
@@ -151,7 +153,7 @@ export default  class RecordList extends React.Component {
     }
     checkend(elem){
         if(!this.state.menu)return;
-        if(this.cond.isuploading || this.state.menu.length<5 ){
+        if(this.state.isuploading || this.state.menu.length<5 ){
             // console.log("uploading",elem);
             return;
         }
@@ -220,7 +222,7 @@ export default  class RecordList extends React.Component {
                     new_posts=new_posts.concat(res['posts']);
                     main.dispatch({ type: 'UPDATE_RECORD_LIST',data:new_posts});
                     setTimeout(()=>{main.cond.gloabaluploading=false;},10000);
-                    main.cond.isuploading=false;
+                    main.setState({isuploading:false});
                     console.log(new_posts);
                 }).catch(function (error) {
                     console.log(error);
@@ -234,7 +236,7 @@ export default  class RecordList extends React.Component {
                 break;
             }
             case 1:{
-                this.cond.isuploading=true;
+                main.setState({isuploading:true});
                 console.log("update  new");
                 var full_list=this.store.full_list;
                 if(full_list.length<10)
@@ -258,7 +260,7 @@ export default  class RecordList extends React.Component {
                 }
                 this.forceUpdate();
                 this.dispatch({ type: 'RECORDS_UPDATE',data:this.state.menu });
-                setTimeout(()=>{main.cond.isuploading=false},1000);
+                setTimeout(()=>{main.setState({isuploading:false});},1000);
 
                 if(full_list.length-30<this.state.menu.length){
                     this.uploadnews(0)
@@ -362,12 +364,20 @@ export default  class RecordList extends React.Component {
                     {this.state.menu&&
                     this.createRecords(this.state.menu)}
                     </PullToRefresh>
+
+                    {!this.state.isuploading &&
                     <Group>
-                        <CellButton align="center" onClick={()=>{this.uploadnews(2);}}>
+                        <CellButton align="center" onClick={() => {
+                            this.uploadnews(2);
+                        }}>
                             Загрузка
                         </CellButton>
-
                     </Group>
+                    }
+                    {
+                        !this.state.isuploading && this.state.menu.length===0 &&
+                            <Footer>У вас нет групп</Footer>
+                    }
 
                 </Panel>
 

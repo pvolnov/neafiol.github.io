@@ -261,7 +261,7 @@ export default class Record extends React.Component {
         localStorage.setItem("savedR", JSON.stringify(newsaved));
         this.setState({issaved: false});
         if (this.state.savemenu) {
-            this.setState({visible: false})
+            this.setState({visible: false});
             this.parents.deletePost();
         }
     }
@@ -385,17 +385,15 @@ export default class Record extends React.Component {
                                       </Button>
                               }
                         >{this.state.gname}</Cell>
-
-                        <Div>
-                            {this.state.text.length > 0 &&
-                            <p dangerouslySetInnerHTML={{__html: (this.state.text)}} onClick={this.fullrecord}
-                               className={this.state.full ? "fulltextarea" : "textarea"}>
-                            </p>
-                            }
-                        </Div>
-
-                        {this.state.imgs.length>0 &&
-                        <ImageBlok imgs={this.state.imgs}/>
+                        {this.state.text.length > 0 &&
+                            <Div>
+                                <p dangerouslySetInnerHTML={{__html: (this.state.text)}} onClick={this.fullrecord}
+                                   className={this.state.full ? "fulltextarea" : "textarea"}>
+                                </p>
+                            </Div>
+                        }
+                        {this.state.imgs.length>0 && this.state.imgs[0]!=="" &&
+                            <ImageBlok imgs={this.state.imgs}/>
                         }
 
                         {this.state.article.img && <Div>

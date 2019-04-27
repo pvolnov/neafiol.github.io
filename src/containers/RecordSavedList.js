@@ -4,6 +4,7 @@ import {CellButton,Footer,Div,Cell,List,HeaderContext,PanelHeaderContent,HeaderB
 import Icon36Delete from '@vkontakte/icons/dist/36/delete';
 import Icon24Delete from '@vkontakte/icons/dist/24/delete';
 import Icon16Dropdown from '@vkontakte/icons/dist/16/dropdown';
+import connect from "@vkontakte/vkui-connect-promise";
 
 export default class RecordSavedList extends React.Component {
     constructor(props) {
@@ -46,6 +47,7 @@ export default class RecordSavedList extends React.Component {
     componentWillMount() {
 
         document.documentElement.scrollTop=this.store.y;
+        connect.send("VKWebAppScroll", {"top": this.store.y});
         var main = this;
         window.onscroll=()=>{
             var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement ).scrollTop;

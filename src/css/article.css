@@ -129,6 +129,7 @@
 
 
 .articleSnippet__block .articleSnippet_button {
+
     font-size: 12px;
     background-color: #fff;
     color: #000;
@@ -144,6 +145,7 @@
 }
 
 .articleSnippet__block .articleSnippet_button:before {
+
     content: '';
     display: block;
     width: 54px;
@@ -159,8 +161,9 @@
     background-position: 0 -182px;
     background-image: url('https://m.vk.com/images/mobile/skins/icon/longread_base_2x.png?2')
 }
-.articleSnippet__block .articleSnippet_button:hover {
-    padding: 10px 14px 10px 30px;
+.articleSnippet__block .articleSnippet_button:active {
+    /*padding: 10px 14px 10px 30px;*/
+    /*margin: 0;*/
 }
 
 
