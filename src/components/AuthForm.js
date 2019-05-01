@@ -45,6 +45,7 @@ export default class AuthForm extends React.Component {
             poput: null,
             consent: 0,
             phone:"+7",
+            phoneprefix:"+7",
             user_info:{},
             guest:true,
             tg_auth:false
@@ -109,11 +110,15 @@ export default class AuthForm extends React.Component {
         this.setState({user_info:user_info})
     }
     getUserNomber() {
+        var main = this;
+
         if(this.cond.phonewasget){
+            if(main.state.phone==="")
+                main.setState({phone:main.state.phoneprefix});
             return;
         }
         this.cond.phonewasget=true;
-        var main = this;
+
 
 
         connect.send("VKWebAppGetPhoneNumber", {}).then((data) => {
@@ -240,6 +245,7 @@ export default class AuthForm extends React.Component {
             });
         }
         if (this.state.actPanel === "verficode") {
+
                 this.httpClient.get(HOST + '/auth/', {
                     params: {
                         page: 2,
@@ -320,6 +326,7 @@ export default class AuthForm extends React.Component {
             }
             this.setState({
                 "phone":phone,
+                "phoneprefix":phone,
                 "country":e.target.value});
 
     }
@@ -383,8 +390,8 @@ export default class AuthForm extends React.Component {
                         {this.state.errortext}
                     </FormStatus>
                     }
-                    <FormLayoutGroup top="Введите код подтверждения" bottom={ALERT_AUTH_TEXT}>
-                        <Input type="tel" onChange={this.onChange} value={this.state.code} name={"code"} placeholder={"Код подтверждения"}/>
+                    <FormLayoutGroup top="Введите код подтверждения из Telegram" bottom={ALERT_AUTH_TEXT}>
+                        <Input maxlength="5" type="tel" onChange={this.onChange} value={this.state.code} name={"code"} placeholder={"Код подтверждения"}/>
                         <Button onClick={this.auth} size="xl">Войти</Button>
                     </FormLayoutGroup>
 

@@ -153,6 +153,16 @@ class AppT extends React.Component {
     }
 
     onStoryChange(e) {
+        if(this.state.activeStory===e.currentTarget.dataset.story){
+            window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+            });
+            setTimeout(()=>{
+                window.scrollTo(0,0);
+            },900)
+        }
+        else
         this.setState({activeStory: e.currentTarget.dataset.story})
     }
 

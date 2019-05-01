@@ -2,12 +2,12 @@
   "name": "Telard",
   "version": "1.0.0",
   "description": "App for indexing content in Telegramm",
-  "homepage": "https://neafiol.github.io/neafiol.githab.io/",
+  "homepage": "https://neafiol.github.io/",
   "main": "index.js",
   "scripts": {
     "start": "cross-env PORT=8001 react-scripts start",
     "build": "react-scripts build",
-    "deploy": "gh-pages -b master -d build"
+    "deploy": "gh-pages -b master  -d build"
   },
   "keywords": [],
   "author": "Petr Volnov",
@@ -34,6 +34,8 @@
     "react-alert-template-basic": "^1.0.0",
     "react-dom": "^16.8.6",
     "react-images": "^0.5.19",
+    "react-medium-zoom": "^1.0.0",
+    "react-native-double-click": "^1.0.5",
     "react-photo-gallery": "^6.3.2",
     "react-redux": "^6.0.1",
     "react-toastify": "^5.0.0-rc.5",

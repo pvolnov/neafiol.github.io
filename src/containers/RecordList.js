@@ -56,14 +56,17 @@ export default  class RecordList extends React.Component {
 
     }
     componentDidMount() {
-        document.documentElement.scrollTop=this.store.y;
-        connect.send("VKWebAppScroll", {"top": this.store.y});
+        window.scrollTo( 0, this.store.y + document.body.clientHeight/2 );
 
         var main=this;
         window.onscroll = ()=> {
             var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement ).scrollTop;
             main.dispatch({ type: 'SET_MAIN_Y',data:posTop });
+        };
+        window.onabort = function() {
+            alert("Load aborted.");
         }
+
     }
     closeToast(){
         this.state.toast-=1;
@@ -122,7 +125,6 @@ export default  class RecordList extends React.Component {
         }
 
         if (n>30 && mas.length>0){
-            n=0;
             console.log("message");
             var mas1=mas;
             this.httpClient.post(STATISTOC_HOST + '/new_stat/', {
@@ -147,6 +149,7 @@ export default  class RecordList extends React.Component {
             }
             Cookies.set("Setting",setting);
             mas=[];
+            n=0;
         }
 
         setTimeout(this.getstatistic,delaytime,mas,n+1);
@@ -215,14 +218,19 @@ export default  class RecordList extends React.Component {
                     }
 
                     res=res.data;
+                    if(res['posts'].length<149){
+                        this.cond.allPostAreThere=true;
+                    }
                     main.setState({
                         fetching: false,
+                        isuploading:false,
                         popout: null});
+
                     var new_posts = main.store.full_list;
                     new_posts=new_posts.concat(res['posts']);
                     main.dispatch({ type: 'UPDATE_RECORD_LIST',data:new_posts});
                     setTimeout(()=>{main.cond.gloabaluploading=false;},10000);
-                    main.setState({isuploading:false});
+
                     console.log(new_posts);
                 }).catch(function (error) {
                     console.log(error);
@@ -260,6 +268,7 @@ export default  class RecordList extends React.Component {
                 }
                 this.forceUpdate();
                 this.dispatch({ type: 'RECORDS_UPDATE',data:this.state.menu });
+
                 setTimeout(()=>{main.setState({isuploading:false});},1000);
 
                 if(full_list.length-30<this.state.menu.length){
@@ -365,19 +374,16 @@ export default  class RecordList extends React.Component {
                     this.createRecords(this.state.menu)}
                     </PullToRefresh>
 
-                    {!this.state.isuploading &&
-                    <Group>
-                        <CellButton align="center" onClick={() => {
-                            this.uploadnews(2);
-                        }}>
-                            Загрузка
-                        </CellButton>
-                    </Group>
-                    }
+
                     {
-                        !this.state.isuploading && this.state.menu.length===0 &&
-                            <Footer>У вас нет групп</Footer>
+                        (!this.state.isuploading && this.state.menu && this.state.menu.length===0) ?
+                            <Footer>У Вас нет групп</Footer>
+                            :
+                            this.cond.allPostAreThere &&
+                                <Footer>Постов больше нет</Footer>
+
                     }
+
 
                 </Panel>
 

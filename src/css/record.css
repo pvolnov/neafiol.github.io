@@ -1,6 +1,10 @@
 .imgblock{
     /*max-height: 100px;*/
 }
+.show_more_text{
+    color: #2a5885;
+    font-weight: 500;
+}
 .rimage{
     max-height: 200px;
     width: 50%;
@@ -10,7 +14,11 @@
 .textarea{
     transition: 0.4s;
 }
+.url{
+    word-break: break-all;
+}
 .fulltextarea{
+
     transition: 0.4s;
     height: auto;
     font-optical-sizing: inherit;
@@ -90,5 +98,4 @@ img[tabindex="0"]:focus ~ * {
 }
 a {
     color: #2a5885;
-
 }

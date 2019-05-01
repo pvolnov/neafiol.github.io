@@ -1,67 +1,98 @@
 import React from 'react';
-import {View,Alert,Footer,Div,Search,Avatar,Tooltip,List,Textarea,Cell,Switch,Group,CellButton,HeaderButton,InfoRow,ScreenSpinner,Checkbox,Select,Radio, FormLayout, FormLayoutGroup,Link, FormStatus, Input, Panel, PanelHeader,Button,Spinner} from "@vkontakte/vkui";
+
+import {
+    Alert,
+    ANDROID,
+    Avatar,
+    Button,
+    Cell,
+    CellButton,
+    Checkbox,
+    Div,
+    Footer,
+    FormLayout,
+    FormLayoutGroup,
+    FormStatus,
+    Group,
+    HeaderButton,
+    InfoRow,
+    Input,
+    IOS,
+    Link,
+    List,
+    Panel,
+    PanelHeader,
+    platform,
+    Radio,
+    ScreenSpinner,
+    Search,
+    Select,
+    Spinner,
+    Switch,
+    Textarea,
+    Tooltip,
+    View
+} from "@vkontakte/vkui";
 
 import Cookies from "js-cookie";
 import Icon24About from '@vkontakte/icons/dist/24/info'
 import {
-    SETTING_GET_PREMIUM_TEXT,
-    TOOLTIP_PERSONAL_DATA,
-    TOOLTIP_PREMUIM,
-    SETTING_GET_PREMIUM_TITLE,
     ABOUT_AUTHOR,
-
-    SETTING_GET_PREMIUM_POST,
     ALERT_LOG_OUT,
-    ALERT_REBULD_ACCOUNT,
-    SETTING_HEAD,
+    SETTING_a17,
+    SETTING_a25,
+    SETTING_a35,
+    SETTING_a45,
+    SETTING_a60,
+    SETTING_a90,
+    SETTING_ABOUT_AUTOR,
+    SETTING_ADD_NEW_GROUP,
+    SETTING_CHANGE_GROUP_LIST,
+    SETTING_DELETE_ACCOUNT,
+    SETTING_EDIT_GROUP_LIST,
+    SETTING_FIND_GROUP,
+    SETTING_FIND_GROUP_TITLE,
     SETTING_FMAIL_MEN,
     SETTING_FMAIL_WOMEN,
-    SETTING_SHOWSE_POL,
-    SETTING_PLASEHODER_NOT_FOUND,
-    SETTING_a17,
-    SETTING_a90,
-    SETTING_a60,
-    SETTING_a45,
-    SETTING_a35,
-    SETTING_a25,
+    SETTING_GET_PREMIUM_POST,
+    SETTING_GET_PREMIUM_TEXT,
+    SETTING_GET_PREMIUM_TITLE,
+    SETTING_GROUP_SETTING,
     SETTING_HASHTEGS,
-    SETTING_HASHTEGS_TOP,
     SETTING_HASHTEGS_PLASEHODER,
-    SETTING_PREMIUM_FUNCTIONAL,
-    SETTING_PREMIUM_GET_VIEW_STAT,
-    SETTING_PREMIUM_ON_ADBLOCK,
-    SETTING_PREMIUM_ON_BLACK_THEME,
-    SETTING_PREMIUM_ON_AD_POSTS,
-    SETTING_PREMIUM_ON_HIED_AD_POSTS,
-    SETTING_PREMIUM_GET_PRIMIUM,
-    SETTING_UPLOAD_GROUP_LIST,
-    SETTING_DELETE_ACCOUNT,
-    SETTING_LOGOUT,
-    SETTING_INFO_TITLE,
-    SETTING_CHANGE_GROUP_LIST,
-    SETTING_INFO_DEBAG_TOP,
+    SETTING_HASHTEGS_TOP,
+    SETTING_HEAD,
     SETTING_INFO_DEBAG_BUTTON,
     SETTING_INFO_DEBAG_TITLE,
-    SETTING_ABOUT_AUTOR,
-    SETTING_YOUR_ARE_GUEST,
-    SETTING_YOUR_ARE_GUEST_TEXT,
-    SETTING_YOUR_ARE_GUEST_ENTER,
-    SETTING_GROUP_SETTING,
-    SETTING_EDIT_GROUP_LIST,
-    SETTING_ADD_NEW_GROUP,
+    SETTING_INFO_DEBAG_TOP,
+    SETTING_INFO_TITLE,
+    SETTING_LOGOUT,
+    SETTING_PLASEHODER_NOT_FOUND,
+    SETTING_PREMIUM_FUNCTIONAL,
+    SETTING_PREMIUM_GET_PRIMIUM,
+    SETTING_PREMIUM_GET_VIEW_STAT,
+    SETTING_PREMIUM_ON_AD_POSTS,
+    SETTING_PREMIUM_ON_ADBLOCK,
+    SETTING_PREMIUM_ON_BLACK_THEME,
+    SETTING_PREMIUM_ON_HIED_AD_POSTS,
+    SETTING_SHOWSE_POL,
+    SETTING_UPDATE_CANCLE,
     SETTING_UPDATE_PRIFIL,
-    SETTING_NOTHING_NOT_FOUND,
-    SETTING_FIND_GROUP,
-    SETTING_FIND_GROUP_TITLE, SETTING_UPDATE_CANCLE
+    SETTING_UPLOAD_GROUP_LIST,
+    SETTING_YOUR_ARE_GUEST,
+    SETTING_YOUR_ARE_GUEST_ENTER,
+    SETTING_YOUR_ARE_GUEST_TEXT,
+    TOOLTIP_PERSONAL_DATA,
+    TOOLTIP_PREMUIM
 } from "../constants/TextConstants";
 import axios from "axios";
-import {STATISTOC_HOST,HOST,VERSION,GUEST_HESH} from "../constants/config";
+import {GUEST_HESH, HOST, STATISTOC_HOST, VERSION} from "../constants/config";
 import Icon24Back from '@vkontakte/icons/dist/24/back';
 import connect from '@vkontakte/vkui-connect';
-import { ToastContainer, toast } from 'react-toastify';
+import {toast, ToastContainer} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "../css/setting.css"
-import { platform, IOS, ANDROID } from '@vkontakte/vkui';
+
 
 import Icon24Flash from "@vkontakte/icons/dist/24/flash";
 
@@ -85,8 +116,8 @@ export default class Setting extends React.Component {
             guest:false,
             groups:[],
             searchGrupList:[],
-            search:""
-
+            search:"",
+            searchlen:0
         };
         var params = window.location.search ;
         params = "{\"" +
@@ -122,6 +153,7 @@ export default class Setting extends React.Component {
         this.search=this.search.bind(this);
         this.addGroup=this.addGroup.bind(this);
         this.addNewGroup=this.addNewGroup.bind(this);
+        this.copyHash=this.copyHash.bind(this);
 
     }
     componentWillMount(){
@@ -184,8 +216,10 @@ export default class Setting extends React.Component {
         //------------INIT------------------------
     }
     componentDidMount() {
-        document.documentElement.scrollTop=0;
-        connect.send("VKWebAppScroll", {"top":0});
+        window.scrollTo( 0, 0 );
+        window.onabort = function() {
+            alert("Load aborted.");
+        }
 
     }
 
@@ -266,7 +300,7 @@ export default class Setting extends React.Component {
 
     }
     stchange(e){
-        this.state[e.target.name]=e.target.value;
+        this.setState({[e.target.name]:e.target.value});
     }
 
     change(e){
@@ -403,15 +437,13 @@ export default class Setting extends React.Component {
                 main.setting.premium=true;
                 main.uloadsetting();
             }
-            else {
+            else if (e.detail.type==="VKWebAppAccessTokenFailed") {
                 main.showtoast("Публикация отклонена",toast.TYPE.ERROR);
             }
         });
     }
     search(search){
-        if(search.length>20){
-            return ;
-        }
+
         this.state.searchlen=search.length;
         var main = this;
         axios.get(HOST + '/user/', {
@@ -453,6 +485,23 @@ export default class Setting extends React.Component {
             actPanel:"groupList"})
 
     }
+    copy(text){
+        let tmp   = document.createElement('INPUT'), // Создаём новый текстовой input
+            focus = document.activeElement; // Получаем ссылку на элемент в фокусе (чтобы не терять фокус)
+
+        tmp.value = text; // Временному input вставляем текст для копирования
+
+        document.body.appendChild(tmp); // Вставляем input в DOM
+        tmp.select(); // Выделяем весь текст в input
+        document.execCommand('copy'); // Магия! Копирует в буфер выделенный текст (см. команду выше)
+        document.body.removeChild(tmp); // Удаляем временный input
+        focus.focus(); // Возвращаем фокус туда, где был
+    }
+    copyHash(){
+        this.copy(Cookies.get("hash"));
+        this.showtoast("Сессия скопирована");
+    }
+
     render() {
         var main = this;
         return (<View popout={this.state.popout} id={this.state.id} activePanel={this.state.actPanel}>
@@ -536,7 +585,7 @@ export default class Setting extends React.Component {
                             </InfoRow>
                         </Cell>
                         <Cell>
-                            <InfoRow title="Версия приложения">
+                            <InfoRow onClick={this.copyHash} title="Версия приложения">
                                 {VERSION}
                             </InfoRow>
                         </Cell>
@@ -548,7 +597,12 @@ export default class Setting extends React.Component {
                     <FormLayout>
                         <Textarea ref={this.dbRef} onChange={this.stchange} value={this.state.bagreport}
                                   name={"bagreport"} top={SETTING_INFO_DEBAG_TOP}/>
-                        <Button align={"right"}  onClick={this.bagreport} size={"l"}>{SETTING_INFO_DEBAG_BUTTON}</Button>
+                        {(this.state.bagreport && this.state.bagreport.length) > 5 ?
+                            <Button align={"right"} level={"primary"}  onClick={this.bagreport}
+                                    size={"l"}>{SETTING_INFO_DEBAG_BUTTON}</Button> :
+                            <Button align={"right"} level={"outline"}
+                                    size={"l"}>{SETTING_INFO_DEBAG_BUTTON}</Button>
+                        }
                     </FormLayout>
                 </Group>
 
@@ -568,9 +622,14 @@ export default class Setting extends React.Component {
                 </Group>
                 <Group title={SETTING_INFO_DEBAG_TITLE}>
                     <FormLayout>
-                        <Textarea onChange={this.stchange} className={"textarea"}
+                        <Textarea onChange={this.stchange} className={"textarea"} value={this.state.bagreport}
                                   name={"bagreport"} top={SETTING_INFO_DEBAG_TOP}/>
-                        <Button align={"right"}  onClick={this.bagreport} size={"l"}>{SETTING_INFO_DEBAG_BUTTON}</Button>
+                        {(this.state.bagreport && this.state.bagreport.length) > 5 ?
+                            <Button align={"right"}  onClick={this.bagreport}
+                                    size={"l"}>{SETTING_INFO_DEBAG_BUTTON}</Button> :
+                            <Button align={"right"} level={"outline"}
+                                    size={"l"}>{SETTING_INFO_DEBAG_BUTTON}</Button>
+                        }
                     </FormLayout>
                 </Group>
             </Panel>
@@ -584,7 +643,7 @@ export default class Setting extends React.Component {
                             {
                                 Array.prototype.map.call(this.state.groups, function (gr, i) {
                                     return (
-                                        <Cell onRemove={() => {
+                                        <Cell key={i} onRemove={() => {
                                             main.remove(gr.group_id)
                                         }} removable={true} before={<Avatar src={gr.icon}/>}>{gr.name}</Cell>
                                     );
@@ -593,7 +652,7 @@ export default class Setting extends React.Component {
                             <CellButton align={"center"} onClick={this.addGroup}>{SETTING_ADD_NEW_GROUP}</CellButton>
                         </List>
                         :
-                        <Footer>{SETTING_NOTHING_NOT_FOUND}</Footer>
+                        <CellButton align={"center"} onClick={this.addGroup}>{SETTING_ADD_NEW_GROUP}</CellButton>
                     }
                     <Div>
                         <Button level={"secondary"} before={<Icon24Flash/>} onClick={this.uploadGL} size="xl">{SETTING_UPDATE_PRIFIL}</Button>
@@ -607,9 +666,9 @@ export default class Setting extends React.Component {
                 </PanelHeader>
                 <ToastContainer/>
 
-                <Search autoFocus={true}
+                <Search autoFocus={true} maxlength="15"
                       after={SETTING_UPDATE_CANCLE} onChange={this.search} />
-                <Group title={SETTING_FIND_GROUP_TITLE}>
+                <Group >
                     <List >
                         {
                             this.state.searchGrupList.map(function (gr, i) {
@@ -622,7 +681,7 @@ export default class Setting extends React.Component {
                     </List>
 
                 </Group>
-                {this.state.searchGrupList.length === 0&& this.state.searchlen>0 &&
+                {this.state.searchGrupList.length === 0 && this.state.searchlen>0 &&
                     <Footer>Подходящих групп не найдено</Footer>
                 }
             </Panel>

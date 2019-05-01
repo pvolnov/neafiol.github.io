@@ -1,6 +1,8 @@
 import React from "react";
 import Gallery from "react-photo-gallery"
 import Lightbox from 'react-images';
+import ReactMediumImg from 'react-medium-zoom'
+
 
 export class ImageBlok extends React.Component {
     constructor(props) {

@@ -53,8 +53,8 @@ export default class Record extends React.Component {
         text = this.textprepare(text, entities);
         var stext = (text).substr(0, 500);
 
-        stext = stext.replace(/\s([а-яА-Яa-zA-Z0-9]*?)$/giu, "");
-        stext += "<a/><br/><span class='noselect'>Показать полностью...</span>";
+        stext = stext.replace(/\s\S+$/giu, "");
+        stext += "<a/><br/><span class='noselect show_more_text'>Показать полностью...</span>";
 
 
         var isfull = true;
@@ -72,6 +72,7 @@ export default class Record extends React.Component {
                 like: false,
                 advertising: false,
                 visible: true,
+                firstadvertising:true,
                 small: isfull,
                 onepost: props.onepost,
                 isfull: isfull,
@@ -143,7 +144,14 @@ export default class Record extends React.Component {
             advertising = JSON.parse(advertising);
             if (advertising.indexOf(this.state.postid) != -1) {
                 adv = true;
-                this.setState({"visible": false})
+                this.setState({advertising:true,
+                    firstadvertising:false,
+                    visible:false});
+                if (this.state.savemenu) {
+                    this.setState({
+                        visible: false});
+                    this.parents.deletePost();
+                }
             }
         }
 
@@ -180,7 +188,7 @@ export default class Record extends React.Component {
                 ds = `<a  href="${e['url']}">${ds}</a>`;
             }
             if (e['_'] === "MessageEntityUrl") {
-                ds = `<a  href="${ds}">${ds}</a>`;
+                ds = `<a class="url"  href="${ds}">${ds}</a>`;
             }
             if (e['_'] === "MessageEntityMention") {
                 ds = ds.replace("@", "");
@@ -216,6 +224,10 @@ export default class Record extends React.Component {
 
             this.setState({text: this.state.ftext, full: true})
         }
+
+        var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement).scrollTop;
+        document.documentElement.scrollTop = posTop + 100;
+        connect.send("VKWebAppScroll", {"top": posTop + 100, "speed": 300});
     }
 
     ruport(info) {
@@ -385,18 +397,21 @@ export default class Record extends React.Component {
                                       </Button>
                               }
                         >{this.state.gname}</Cell>
-                        {this.state.text.length > 0 &&
-                            <Div>
-                                <p dangerouslySetInnerHTML={{__html: (this.state.text)}} onClick={this.fullrecord}
-                                   className={this.state.full ? "fulltextarea" : "textarea"}>
-                                </p>
-                            </Div>
-                        }
-                        {this.state.imgs.length>0 && this.state.imgs[0]!=="" &&
-                            <ImageBlok imgs={this.state.imgs}/>
+
+                        <Div>
+                            {this.state.text.length > 0 &&
+                            <p dangerouslySetInnerHTML={{__html: (this.state.text)}} onClick={this.fullrecord}
+                               className={this.state.full ? "fulltextarea" : "textarea"}>
+                            </p>
+                            }
+                        </Div>
+
+
+                        {this.state.imgs.length > 0 && this.state.imgs[0] !== "" &&
+                        <ImageBlok imgs={this.state.imgs}/>
                         }
 
-                        {this.state.article.img && <Div>
+                        {this.state.article.img && this.state.article['url'].indexOf("https://t.me/") == -1 && <Div>
                             <a class="articleSnippet__block">
                                 <div className="articleSnippet__thumb"
                                      style={{"background-image": "url(" + this.state.article['img'] + ")"}}></div>
@@ -405,7 +420,8 @@ export default class Record extends React.Component {
                                         <div class="articleSnippet_icon"></div>
                                         <div class="articleSnippet_title">{this.state.article['title']}</div>
                                         <div class="articleSnippet_author">{this.state.gname}<span class=""></span></div>
-                                        <a href={this.state.article['url']} target="_blank" style={{"text-decoration":"none"}} class="articleSnippet_button">ОТКРЫТЬ
+                                        <a href={this.state.article['url']} className={"url"} target="_blank"
+                                            class="articleSnippet_button">ОТКРЫТЬ
                                         </a>
                                     </div>
                                 </div>
@@ -462,7 +478,7 @@ export default class Record extends React.Component {
                             <Icon24ShareOutline className={"passive_ico"}/>
                         </Button>}
 
-                        {!this.state.onepost && (this.state.issaved ?
+                        {!this.state.onepost && !this.state.savemenu &&(this.state.issaved ?
                                 <Button style={{float: "right"}} level="tertiary" size="m">
                                     <Icon24Download className={"activ_ico"} onClick={this.unsaveRecord}/>
                                 </Button>
@@ -476,10 +492,11 @@ export default class Record extends React.Component {
                     </Group>
                     :
                     <React.Fragment>
-                        {!this.state.savemenu &&
+                        {!this.state.savemenu && this.state.firstadvertising &&
                         <Group>
                             <CellButton expandable={true} onClick={() => {
-                                this.setState({visible: true});
+                                this.unsetparam("advertising");
+                                this.setState({"visible": true})
                             }} align={"center"}>Скрыт рекламный пост. Показать?</CellButton>
                         </Group>
                         }
