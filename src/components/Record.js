@@ -392,16 +392,14 @@ export default class Record extends React.Component {
                                           <Icon24ShareOutline className={"passive_ico"}/>
                                       </Button>
                                       :
-                                      <Button level="tertiary" size="m" onClick={this.openSheet} type={""}>
-                                          <Icon24MoreVertical className={"passive_ico"}/>
-                                      </Button>
+                                      <Icon24MoreVertical onClick={this.openSheet}  className={"passive_ico post_setting"}/>
                               }
                         >{this.state.gname}</Cell>
 
                         <Div>
                             {this.state.text.length > 0 &&
                             <p dangerouslySetInnerHTML={{__html: (this.state.text)}} onClick={this.fullrecord}
-                               className={this.state.full ? "fulltextarea" : "textarea"}>
+                               className={"select "+ this.state.full ? "fulltextarea" : "textarea"}>
                             </p>
                             }
                         </Div>

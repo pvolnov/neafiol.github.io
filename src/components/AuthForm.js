@@ -18,6 +18,7 @@ import {
     Spinner,
     List,
     Cell,
+    Alert,
     HeaderButton
 } from "@vkontakte/vkui";
 import Icon24Back from '@vkontakte/icons/dist/24/back';
@@ -55,6 +56,7 @@ export default class AuthForm extends React.Component {
         };
         this.httpClient = axios.create();
         this.httpClient.defaults.timeout = 14000;
+
         this.auth = this.auth.bind(this);
         this.onChange = this.onChange.bind(this);
         this.onShoise = this.onShoise.bind(this);
@@ -64,6 +66,7 @@ export default class AuthForm extends React.Component {
         this.generateProfil = this.generateProfil.bind(this);
         this.uploadcountry = this.uploadcountry.bind(this);
         this.closeToast = this.closeToast.bind(this);
+        this.decheck = this.decheck.bind(this);
 
         if(Cookies.get("codewait")){
             this.state.actPanel="verficode";
@@ -75,8 +78,46 @@ export default class AuthForm extends React.Component {
         if(Cookies.get("tg_auth")){
             this.state.tg_auth=JSON.parse(Cookies.get("tg_auth"));
         }
+        this.aRef = React.createRef();
 
     }
+    componentDidMount() {
+        var main = this;
+        window.onpopstate = function(e) {
+            main.setState({
+                popout:
+                    <Alert
+                        actions={[{
+                            title: 'Отмена',
+                            autoclose: true,
+                            style: 'cancel',
+                            action:()=>{
+                                window.history.pushState({page: 2}, "setting", "");
+                            }
+                        }, {
+                            title: "Выйти",
+                            action: () => {
+                                e.preventDefault();
+                                window.history.back();
+                            },
+                            autoclose: true,
+                            style:"destructive"
+
+                        }]}
+                        onClose={() => {
+                            main.setState({popout: null});
+
+                        }}
+                    >
+                        <h2>Подтвердите действие</h2>
+                        <p>Вы действительно хотите выйти?</p>
+                    </Alert>
+            })
+
+        };
+        this.android = ! ['iPad', 'iPhone', 'iPod'].indexOf(navigator.platform) >= 0;
+    }
+
     closeToast(){
         this.state.toast-=1;
     }
@@ -94,7 +135,7 @@ export default class AuthForm extends React.Component {
             closeOnClick:false,
             draggable:false,
             onClose:closeToast,
-            className: 'toast',
+            className: this.android?"toast_android":"toast_iphone",
             autoClose:autoClose
         })
     }
@@ -331,6 +372,11 @@ export default class AuthForm extends React.Component {
 
     }
 
+    decheck(){
+        console.log(this.aRef);
+
+    }
+
 
     render() {
         var main=this;
@@ -338,7 +384,7 @@ export default class AuthForm extends React.Component {
         return (<View popout={this.state.popout} id={this.state.id} activePanel={this.state.actPanel}>
             <Panel id={"telauth"} >
                 <PanelHeader>Авторизация</PanelHeader>
-                <FormLayout status={1}>
+                <FormLayout   status={1}>
                     {(this.state.iser) &&
                     <FormStatus title={this.state.errortitle} state="error">
                         {this.state.errortext}
@@ -353,24 +399,21 @@ export default class AuthForm extends React.Component {
                         })
                         }
                     </Select>
-                    <FormLayoutGroup top="Введите ваш номер телефона">
+                    <FormLayoutGroup top="Введите Ваш номер телефона">
                         <Input  status={"default"} onChange={this.onChange} name={"phone"} type="tel" autocorrect="off" autocomplete="tel"
                                value={this.state.phone} onClick={this.getUserNomber}/>
                         <Button size="xl" onClick={this.auth}>Далее</Button>
                     </FormLayoutGroup>
-                    <Checkbox  onClick={(e) => {
+                    <Checkbox checked={this.state.consent} onClick={(e) => {
+
                         if(this.cbox ){
                             this.cbox=false;
                             return false;
                         }
-                        console.log("k");
-                        this.state.consent ^= 1;
+                        this.setState({consent:this.state.consent ^= 1});
                     }}>Я принимаю условия пользовательского <Link onClick={()=>{
-                        // this.state.consent ^= 1;
                         this.cbox=true;
-                        console.log("k2");
                         this.setState({actPanel:"userdeal"});
-                        return false;
 
                     }}>соглашения</Link> </Checkbox>
                 </FormLayout>

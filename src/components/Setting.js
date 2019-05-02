@@ -37,7 +37,7 @@ import {
 import Cookies from "js-cookie";
 import Icon24About from '@vkontakte/icons/dist/24/info'
 import {
-    ABOUT_AUTHOR,
+    ABOUT_AUTHOR, ALERT_DELETE,
     ALERT_LOG_OUT,
     SETTING_a17,
     SETTING_a25,
@@ -217,10 +217,40 @@ export default class Setting extends React.Component {
     }
     componentDidMount() {
         window.scrollTo( 0, 0 );
-        window.onabort = function() {
-            alert("Load aborted.");
-        }
+        var main = this;
+        window.onpopstate = function(e) {
+            main.setState({
+                popout:
+                    <Alert
+                        actions={[{
+                            title: 'Отмена',
+                            autoclose: true,
+                            style: 'cancel',
+                            action:()=>{
+                                window.history.pushState({page: 2}, "setting", "");
+                            }
+                        }, {
+                            title: "Выйти",
+                            action: () => {
+                                e.preventDefault();
+                                window.history.back();
+                            },
+                            autoclose: true,
+                            style:"destructive"
 
+                        }]}
+                        onClose={() => {
+                            main.setState({popout: null});
+
+                        }}
+                    >
+                        <h2>Подтвердите действие</h2>
+                        <p>Вы действительно хотите выйти?</p>
+                    </Alert>
+            })
+
+        };
+        this.android= !['iPad', 'iPhone', 'iPod'].indexOf(navigator.platform) >= 0;
     }
 
     remove(group_id){
@@ -276,12 +306,12 @@ export default class Setting extends React.Component {
             closeOnClick:false,
             autoClose:time,
             onClose:closeToast,
-            className: "toast"
+            className: this.android?"toast_android":"toast_iphone"
         });
     }
     bagreport(e){
         if(!this.state.bagreport || this.state.bagreport===""){
-            this.showtoast("Несодержательный bag report",toast.TYPE.ERROR);
+            this.showtoast("Несодержательный отчет",toast.TYPE.ERROR);
             return;
         }
         axios.post(STATISTOC_HOST+"/bag_report/",{
@@ -289,10 +319,15 @@ export default class Setting extends React.Component {
             bag_text:this.state.bagreport
         });
         this.setState({bagreport:""});
-        e.target.value="";
         this.showtoast("Сообщение отправлено",toast.TYPE.INFO);
-        console.log(this.dbRef.current);
-        this.dbRef.current.state.value="";
+
+        try {
+            e.target.value="";
+            this.dbRef.current.state.value = "";
+        }
+        catch (e) {
+            console.log(e);
+        }
 
     }
     remakeaccount(){
@@ -339,7 +374,7 @@ export default class Setting extends React.Component {
             ()=>{main.setState({actPanel:"set"})}
         );
     }
-    logout(enter = false){
+    logout(enter = false,delet=false){
         if(enter){
             Cookies.set("auth","false");
             Cookies.set("hash","");
@@ -352,21 +387,25 @@ export default class Setting extends React.Component {
                     actions={[{
                         title: 'Далее',
                         autoclose: true,
+                        style: 'destructive',
                         action:()=>{
                             Cookies.set("auth","false");
                             Cookies.set("hash","");
+                            if(delet){
+                                Cookies.set("ghash","");
+                            }
                             window.location.reload();
                         },
                     },
                         {
                             title: 'Отмена',
                             autoclose: true,
-                            style: 'destructive'
+
                         }]}
                     onClose={()=>{this.setState({popout:null})}}
                 >
                     <h2>Предупреждение</h2>
-                    <p>{ALERT_LOG_OUT}</p>
+                    <p>{delet?ALERT_DELETE:ALERT_LOG_OUT}</p>
                 </Alert>
         });
 
@@ -525,7 +564,7 @@ export default class Setting extends React.Component {
                         </Select>
                     </FormLayout>
                     <FormLayout>
-                        <Textarea onChange={this.change} defaultValue={this.state.setting.hashteg} name={"hashteg"} top={SETTING_HASHTEGS_TOP} placeholder={SETTING_HASHTEGS_PLASEHODER}/>
+                        <Textarea onChange={this.change} maxlength="200" defaultValue={this.state.setting.hashteg} name={"hashteg"} top={SETTING_HASHTEGS_TOP} placeholder={SETTING_HASHTEGS_PLASEHODER}/>
                     </FormLayout>
                 </Group>
                 </Tooltip>
@@ -564,8 +603,8 @@ export default class Setting extends React.Component {
                 <Group title="Telegram">
                     {!this.state.guest&&<CellButton onClick={this.uloadgrouplist}>{SETTING_UPLOAD_GROUP_LIST}</CellButton>}
                     {this.state.guest&&<CellButton onClick={this.remakeaccount}>{SETTING_CHANGE_GROUP_LIST}</CellButton>}
-                    <CellButton expandable={true}  level="danger" onClick={this.logout}>{SETTING_LOGOUT}</CellButton>
-                    <CellButton expandable={true}  level="danger" onClick={this.logout}>{SETTING_DELETE_ACCOUNT}</CellButton>
+                    <CellButton expandable={true}  level="danger" onClick={()=>{this.logout()}}>{SETTING_LOGOUT}</CellButton>
+                    {this.state.guest&&<CellButton expandable={true}  level="danger" onClick={()=>{this.logout(false,true)}}>{SETTING_DELETE_ACCOUNT}</CellButton>}
                 </Group>
                 <Group title={SETTING_INFO_TITLE}>
                     <List>
@@ -595,7 +634,7 @@ export default class Setting extends React.Component {
                 </Group>
                 <Group title={SETTING_INFO_DEBAG_TITLE}>
                     <FormLayout>
-                        <Textarea ref={this.dbRef} onChange={this.stchange} value={this.state.bagreport}
+                        <Textarea ref={this.dbRef} maxlength="400" onChange={this.stchange} value={this.state.bagreport}
                                   name={"bagreport"} top={SETTING_INFO_DEBAG_TOP}/>
                         {(this.state.bagreport && this.state.bagreport.length) > 5 ?
                             <Button align={"right"} level={"primary"}  onClick={this.bagreport}
@@ -640,6 +679,7 @@ export default class Setting extends React.Component {
                 <Group title={SETTING_EDIT_GROUP_LIST}>
                     {(this.state.groups && this.state.groups.length>0) ?
                         <List>
+                            <CellButton align={"center"} onClick={this.addGroup}>{SETTING_ADD_NEW_GROUP}</CellButton>
                             {
                                 Array.prototype.map.call(this.state.groups, function (gr, i) {
                                     return (
@@ -649,7 +689,7 @@ export default class Setting extends React.Component {
                                     );
                                 })
                             }
-                            <CellButton align={"center"} onClick={this.addGroup}>{SETTING_ADD_NEW_GROUP}</CellButton>
+
                         </List>
                         :
                         <CellButton align={"center"} onClick={this.addGroup}>{SETTING_ADD_NEW_GROUP}</CellButton>

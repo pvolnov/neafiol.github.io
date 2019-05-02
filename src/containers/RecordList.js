@@ -1,11 +1,12 @@
 import React from "react";
 import axios from "axios";
 import Record from "../components/Record";
-import {CellButton,Tooltip,Footer, PullToRefresh,Group, Panel, PanelHeader, ScreenSpinner, View} from '@vkontakte/vkui';
+import {CellButton,Tooltip,Footer,Alert, PullToRefresh,Group, Panel, PanelHeader, ScreenSpinner, View} from '@vkontakte/vkui';
 import Cookies from "js-cookie";
 import {HOST,STATISTOC_HOST} from '../constants/config'
 import connect from '@vkontakte/vkui-connect-promise';
 import {toast, ToastContainer} from "react-toastify";
+
 
 export default  class RecordList extends React.Component {
     constructor(props) {
@@ -43,29 +44,62 @@ export default  class RecordList extends React.Component {
         if(this.store.list)
         if(this.store.list.length<2){
             this.uploadnews(-1);
+            setTimeout(this.getstatistic,2000,[],0);
         }
         else {
             this.setState({
                 menu: this.store.list
             });
         }
+
+
         //we can't sent too many data in our recuest:
-        setTimeout(this.getstatistic,2000,[],0);
-
-
 
     }
     componentDidMount() {
-        window.scrollTo( 0, this.store.y + document.body.clientHeight/2 );
+        window.scrollTo( 0, this.store.y + 100);
 
         var main=this;
         window.onscroll = ()=> {
             var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement ).scrollTop;
             main.dispatch({ type: 'SET_MAIN_Y',data:posTop });
         };
-        window.onabort = function() {
-            alert("Load aborted.");
-        }
+
+        window.onpopstate = function(e) {
+            console.log(window.history);
+            main.setState({
+                popout:
+                    <Alert
+                        actions={[{
+                            title: 'Отмена',
+                            autoclose: true,
+                            style: 'cancel',
+                            action:()=>{
+                                window.history.pushState({page: 1}, "", "");
+                            }
+                        }, {
+                            title: "Выйти",
+                            action: () => {
+                                e.preventDefault();
+                                window.history.back();
+                            },
+                            autoclose: true,
+                            style:"destructive"
+
+                        }]}
+                        onClose={() => {
+                            main.setState({popout: null});
+                        }}
+                    >
+                        <h2>Подтвердите действие</h2>
+                        <p>Вы действительно хотите выйти?</p>
+                    </Alert>
+            })
+
+        };
+
+        window.history.pushState({page: 1}, "main", "");
+        this.android = ! ['iPad', 'iPhone', 'iPod'].indexOf(navigator.platform) >= 0;
 
     }
     closeToast(){
@@ -86,7 +120,7 @@ export default  class RecordList extends React.Component {
             hideProgressBar:true,
             draggable:false,
             onClose:closeToast,
-            className: 'toast',
+            className: this.android?"toast_android":"toast_iphone",
             autoClose:autoClose
         })
     }

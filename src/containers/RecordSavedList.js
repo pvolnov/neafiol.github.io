@@ -54,13 +54,7 @@ export default class RecordSavedList extends React.Component {
 
     }
 
-    componentWillUpdate(nextProps, nextState, nextContext) {
-        console.log("RECORD LIST UPDATE");
-    }
-
     componentWillMount() {
-
-
         var main = this;
         window.onscroll = () => {
             var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement).scrollTop;
@@ -69,7 +63,41 @@ export default class RecordSavedList extends React.Component {
 
     }
     componentDidMount() {
-        window.scrollTo( 0, this.store.y + document.body.clientHeight/2 );
+        window.scrollTo( 0, this.store.y + 100 );
+        var main = this;
+        window.onpopstate = function(e) {
+            main.setState({
+                popout:
+                    <Alert
+                        actions={[{
+                            title: 'Отмена',
+                            autoclose: true,
+                            style: 'cancel',
+                            action:()=>{
+                                window.history.pushState({page: 2}, "setting", "");
+                            }
+                        }, {
+                            title: "Выйти",
+                            action: () => {
+                                e.preventDefault();
+                                window.history.back();
+                            },
+                            autoclose: true,
+                            style:"destructive"
+
+                        }]}
+                        onClose={() => {
+                            main.setState({popout: null});
+
+                        }}
+                    >
+                        <h2>Подтвердите действие</h2>
+                        <p>Вы действительно хотите выйти?</p>
+                    </Alert>
+            })
+
+        };
+        this.android= !['iPad', 'iPhone', 'iPod'].indexOf(navigator.platform) >= 0;
     }
 
     clearAll(e) {
@@ -102,7 +130,7 @@ export default class RecordSavedList extends React.Component {
                     }}
                 >
                     <h2>Подтвердите действие</h2>
-                    <p>Очистить все сохраненные группы</p>
+                    <p>Удалить все сохраненные посты</p>
                 </Alert>
         });
 
