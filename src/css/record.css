@@ -17,6 +17,7 @@
 .url{
     word-break: break-all;
 }
+
 .fulltextarea{
 
     transition: 0.4s;
@@ -32,6 +33,9 @@
     transition: 0.1s;
     border-top: #929eb0 6px solid;
     border-bottom: #929eb0 6px solid;
+}
+.photo{
+    touch-action: pinch-zoom;
 }
 .normalfullphoto{
     width: 100%;

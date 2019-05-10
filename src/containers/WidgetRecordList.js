@@ -50,14 +50,13 @@ export default class WidgetRecordList extends React.Component {
         var main = this;
         this.httpClient.get("https://telegram.org/").catch(
             (e) => {
-                console.log(e.message);
                 if(e.message.indexOf("timeout")!=-1) {
                     main.setState({
                         popout:
                             <Alert
                                 actionsLayout="vertical"
                                 actions={[{
-                                    title: 'Закрыть',
+                                    title: 'Отмена',
                                     autoclose: true,
                                     style: 'destructive'
                                 }]}
@@ -97,7 +96,6 @@ export default class WidgetRecordList extends React.Component {
                     menu:res['widgets']
                 });
                 main.dispatch({ type: 'WIDGETS_UPDATE',data:res.widgets });
-                console.log("STORE LEN",main.store.length);
                 if(main.state.connection){
                     main.setState({
                         popout: null,

@@ -154,13 +154,23 @@ class AppT extends React.Component {
 
     onStoryChange(e) {
         if(this.state.activeStory===e.currentTarget.dataset.story){
+            if(this.scroll){
+                return;
+            }
+
+            var main = this;
+            this.scroll = true;
             window.scrollTo({
                 top: 0,
                 behavior: "smooth"
             });
+            var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement ).scrollTop;
+            if(posTop>6000)
             setTimeout(()=>{
                 window.scrollTo(0,0);
-            },900)
+                main.scroll=false;
+
+            },600)
         }
         else
         this.setState({activeStory: e.currentTarget.dataset.story})
@@ -207,6 +217,9 @@ class AppT extends React.Component {
             tabbar = null;
             this.state.activeStory = 'auth';
         }
+        else {
+            Cookies.set("codewait", false);
+        }
         if(this.params.post ){
             this.state.activeStory = "onepost";
             tabbar=null;
@@ -218,9 +231,9 @@ class AppT extends React.Component {
 
         return (
             <Epic activeStory={this.state.activeStory} tabbar={tabbar}>
-                <Setting id={"setting"}/>
+                <Setting id={"setting"} store={this.store.setting} dispatch={this.dispatch} main={this}/>
                 <RecordList store={this.store.record} dispatch={this.dispatch} id={"base"}/>
-                <RecordSavedList store={this.store.saved} dispatch={this.dispatch}  id={"saved"}/>
+                <RecordSavedList store={this.store.saveds} dispatch={this.dispatch}  id={"saved"}/>
                 {false &&
                 <WidgetRecordList store={this.store.wrecord} dispatch={this.dispatch} id={"wigetsrecord"}/>}
                 <AuthForm id={"auth"}/>

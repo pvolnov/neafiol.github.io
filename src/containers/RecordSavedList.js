@@ -18,7 +18,6 @@ import {
 } from '@vkontakte/vkui';
 import Icon24Delete from '@vkontakte/icons/dist/24/delete';
 import Icon16Dropdown from '@vkontakte/icons/dist/16/dropdown';
-import connect from "@vkontakte/vkui-connect-promise";
 
 export default class RecordSavedList extends React.Component {
     constructor(props) {
@@ -56,16 +55,18 @@ export default class RecordSavedList extends React.Component {
 
     componentWillMount() {
         var main = this;
-        window.onscroll = () => {
-            var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement).scrollTop;
-            main.dispatch({type: 'SET_SAVED_Y', data: posTop});
-        };
+
 
     }
     componentDidMount() {
-        window.scrollTo( 0, this.store.y + 100 );
         var main = this;
+        window.scrollTo( 0, this.store.y  );
+
         window.onpopstate = function(e) {
+            for(var i =0;i<window.history.length;i++){
+                window.history.back();
+            }
+
             main.setState({
                 popout:
                     <Alert
@@ -74,21 +75,20 @@ export default class RecordSavedList extends React.Component {
                             autoclose: true,
                             style: 'cancel',
                             action:()=>{
-                                window.history.pushState({page: 2}, "setting", "");
+                                window.history.pushState({page: 1}, "", "");
                             }
                         }, {
                             title: "Выйти",
                             action: () => {
                                 e.preventDefault();
                                 window.history.back();
+
                             },
                             autoclose: true,
                             style:"destructive"
-
                         }]}
                         onClose={() => {
                             main.setState({popout: null});
-
                         }}
                     >
                         <h2>Подтвердите действие</h2>
@@ -97,6 +97,11 @@ export default class RecordSavedList extends React.Component {
             })
 
         };
+        window.onscroll = () => {
+            var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement).scrollTop;
+            main.dispatch({type: 'SET_SAVED_Y', data: posTop});
+        };
+
         this.android= !['iPad', 'iPhone', 'iPod'].indexOf(navigator.platform) >= 0;
     }
 
@@ -110,7 +115,7 @@ export default class RecordSavedList extends React.Component {
                         autoclose: true,
                         style: 'cancel'
                     }, {
-                        title: "Очистить",
+                        title: "Удалить",
                         action: () => {
                             localStorage.setItem("savedR", "");
                             localStorage.setItem("listsavedR", "");
@@ -130,7 +135,7 @@ export default class RecordSavedList extends React.Component {
                     }}
                 >
                     <h2>Подтвердите действие</h2>
-                    <p>Удалить все сохраненные посты</p>
+                    <p>Удалить все сохраненные посты?</p>
                 </Alert>
         });
 
@@ -170,7 +175,6 @@ export default class RecordSavedList extends React.Component {
     deletePost() {
         this.state.empty_nemu -= 1;
         this.forceUpdate();
-        console.log("- >", this.state.empty_nemu);
 
     }
 

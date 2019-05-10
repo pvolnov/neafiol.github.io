@@ -2,6 +2,7 @@ import React from "react";
 import Gallery from "react-photo-gallery"
 import Lightbox from 'react-images';
 import ReactMediumImg from 'react-medium-zoom'
+import {Alert} from "./Setting";
 
 
 export class ImageBlok extends React.Component {
@@ -52,6 +53,11 @@ export class ImageBlok extends React.Component {
         this.openLightbox = this.openLightbox.bind(this);
         this.gotoNext = this.gotoNext.bind(this);
         this.gotoPrevious = this.gotoPrevious.bind(this);
+        this.showall = this.showall.bind(this);
+    }
+
+    componentDidMount() {
+
     }
 
     openLightbox(event, obj) {
@@ -92,6 +98,17 @@ export class ImageBlok extends React.Component {
         }
 
     }
+    showall(e){
+        if(this.full){
+            document.exitFullscreen();
+            this.full = false;
+            return;
+        }
+        this.full=true;
+
+        console.log(e)
+        e.target.requestFullscreen()
+    }
 
     render() {
         var photos = [];
@@ -106,12 +123,12 @@ export class ImageBlok extends React.Component {
         return (
             <React.Fragment>
                 <React.Fragment>{this.state.fm && ((/\.mp4$/.test(this.state.fm.src)) ?
-                    <video preload={true} muted={true}
-                           autoPlay={true} id="message_video" loop={true} playsinline={true} width="100%" height="100%">
-                        <source src={this.state.fm.src}/>
+                    <video preload={true} muted={true} src={this.state.fm.src} style={{"max-height":window.screen.height-100}}
+                           autoPlay={true} id="message_video" loop={true} playsinline={true} width="100%" >
                     </video>
                     :
                     this.state.fm && (<img onClick={this.showbigphoto}
+                                           // onClickImage={this.showall}
                                            className={this.state.fm.img.height <= this.state.fm.img.width * 1.3 ? 'normalfullphoto' : 'fullphoto'}
                                            src={this.state.fm.src}/>
                     ))
@@ -120,6 +137,7 @@ export class ImageBlok extends React.Component {
                 <Gallery columns={(photos.length % 3 > 0) ? 2 : 3} margin={1} photos={photos}
                          onClick={this.openLightbox}/>
                 <Lightbox images={photos}
+                          imageCountSeparator={" из "}
                           onClose={this.closeLightbox}
                           onClickPrev={this.gotoPrevious}
                           onClickNext={this.gotoNext}
@@ -130,31 +148,6 @@ export class ImageBlok extends React.Component {
 
         );
 
-        // return <div className={'imgblock'} >
-        //     {this.state.impair&&
-        //     Array.prototype.map.call(this.state.impair, function (pair, i) {
-        //
-        //         return(
-        //             <div className={'imgblock'}>
-        //                 <img  className={'rimage'} tabindex="0" src={pair[0]}></img>
-        //                 <img  className={'rimage'}  tabindex="0" src={pair[1]}></img>
-        //             </div>
-        //
-        //         );
-        //     })
-        //     }
-        //     {(/\.mp4$/.test(this.state.fm))?
-        //                 <video preload={true} muted={true}
-        //                        autoPlay={true} id="message_video" loop={true} playsinline={true} width="100%" height="100%">
-        //                     <source src={this.state.fm} />
-        //                 </video>
-        //         :
-        //         <img onClick={this.showbigphoto}
-        //              className={'fullphoto'} src={this.state.fm}/>
-        //     }
-        //
-        //
-        //
-        // </div>
+
     }
 }

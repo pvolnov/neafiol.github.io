@@ -1,23 +1,26 @@
 import React from 'react';
 import ActionSheet from "@vkontakte/vkui/dist/components/ActionSheet/ActionSheet";
 import {
-    View,
-    Panel,
     ActionSheetItem,
-    PanelHeader,
-    ScreenSpinner,
-    Tooltip,
+    ANDROID,
     Avatar,
-    Group,
-    List,
+    Button,
     Cell,
     CellButton,
-    HeaderButton,
-    TabbarItem,
-    Tabbar,
-    Epic,
     Div,
-    Button
+    Epic,
+    Group,
+    HeaderButton,
+    IOS,
+    List,
+    Panel,
+    PanelHeader,
+    platform,
+    ScreenSpinner,
+    Tabbar,
+    TabbarItem,
+    Tooltip,
+    View
 } from '@vkontakte/vkui';
 
 import Icon24Download from '@vkontakte/icons/dist/24/download';
@@ -25,7 +28,6 @@ import Icon24ShareOutline from '@vkontakte/icons/dist/24/share_outline';
 
 import Icon24ThumbDown from '@vkontakte/icons/dist/24/thumb_down';
 import Icon24ThumbUp from '@vkontakte/icons/dist/24/thumb_up';
-import Icon24Send from '@vkontakte/icons/dist/24/send';
 import Icon24MoreVertical from '@vkontakte/icons/dist/24/more_vertical';
 import Icon24MoneyCircle from '@vkontakte/icons/dist/24/money_circle';
 import {ImageBlok} from "./ImageBlock";
@@ -34,7 +36,6 @@ import {STATISTOC_HOST, VK_APPS_URL} from "../constants/config";
 import connect from '@vkontakte/vkui-connect-promise';
 import axios from "axios";
 import Cookies from "js-cookie";
-import {platform, IOS, ANDROID} from '@vkontakte/vkui';
 
 
 export default class Record extends React.Component {
@@ -225,9 +226,7 @@ export default class Record extends React.Component {
             this.setState({text: this.state.ftext, full: true})
         }
 
-        var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement).scrollTop;
-        document.documentElement.scrollTop = posTop + 100;
-        connect.send("VKWebAppScroll", {"top": posTop + 100, "speed": 300});
+
     }
 
     ruport(info) {
@@ -354,7 +353,7 @@ export default class Record extends React.Component {
                     >
 
                         {
-                            !this.state.advertising &&
+                            !this.state.savemenu &&
                             <ActionSheetItem autoclose onClick={() => {
                                 main.setparam("advertising")
                             }} theme="destructive">Рекламный пост!</ActionSheetItem>
@@ -366,7 +365,7 @@ export default class Record extends React.Component {
                                 <ActionSheetItem autoclose onClick={main.saveRecord}>Сохранить</ActionSheetItem>
                         }
 
-                        {this.osname === IOS && <ActionSheetItem autoclose theme="cancel">Закрыть</ActionSheetItem>}
+                        {this.osname === IOS && <ActionSheetItem autoclose theme="cancel">Отмена</ActionSheetItem>}
                         {/*<ActionSheetItem >Отписаться от группы</ActionSheetItem>*/}
                         {/*<ActionSheetItem>Открыть в телеграм</ActionSheetItem>*/}
                     </ActionSheet>
@@ -444,7 +443,8 @@ export default class Record extends React.Component {
                                 </Button>
                         )
                         }
-                        {(this.state.advertising &&
+                        {
+                            (this.state.advertising &&
                             <Button level="tertiary" size="m" onClick={() => {
                                 this.unsetparam("advertising");
                             }}>
@@ -476,16 +476,16 @@ export default class Record extends React.Component {
                             <Icon24ShareOutline className={"passive_ico"}/>
                         </Button>}
 
-                        {!this.state.onepost && !this.state.savemenu &&(this.state.issaved ?
-                                <Button style={{float: "right"}} level="tertiary" size="m">
-                                    <Icon24Download className={"activ_ico"} onClick={this.unsaveRecord}/>
-                                </Button>
-                                :
-                                <Button className={"passive_ico"} style={{float: "right"}} level="tertiary" size="m">
-                                    <Icon24Download onClick={this.saveRecord}/>
-                                </Button>
-                        )
-                        }
+                        {/*{!this.state.onepost && !this.state.savemenu &&(this.state.issaved ?*/}
+                                {/*<Button style={{float: "right"}} level="tertiary" size="m">*/}
+                                    {/*<Icon24Download className={"activ_ico"} onClick={this.unsaveRecord}/>*/}
+                                {/*</Button>*/}
+                                {/*:*/}
+                                {/*<Button className={"passive_ico"} style={{float: "right"}} level="tertiary" size="m">*/}
+                                    {/*<Icon24Download onClick={this.saveRecord}/>*/}
+                                {/*</Button>*/}
+                        {/*)*/}
+                        {/*}*/}
 
                     </Group>
                     :
@@ -493,7 +493,7 @@ export default class Record extends React.Component {
                         {!this.state.savemenu && this.state.firstadvertising &&
                         <Group>
                             <CellButton expandable={true} onClick={() => {
-                                this.unsetparam("advertising");
+                                // this.unsetparam("advertising");
                                 this.setState({"visible": true})
                             }} align={"center"}>Скрыт рекламный пост. Показать?</CellButton>
                         </Group>
