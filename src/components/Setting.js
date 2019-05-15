@@ -46,7 +46,7 @@ import {
     SETTING_a45,
     SETTING_a60,
     SETTING_a90,
-    SETTING_ABOUT_AUTOR,
+    SETTING_ABOUT_AUTOR, SETTING_ADD_FIRST_GROUP,
     SETTING_ADD_NEW_GROUP,
     SETTING_CHANGE_GROUP_LIST,
     SETTING_DELETE_ACCOUNT,
@@ -66,7 +66,7 @@ import {
     SETTING_INFO_DEBAG_TITLE,
     SETTING_INFO_DEBAG_TOP,
     SETTING_INFO_TITLE,
-    SETTING_LOGOUT,
+    SETTING_LOGOUT, SETTING_NOONE_NEW_GROUP,
     SETTING_PLASEHODER_NOT_FOUND,
     SETTING_PREMIUM_FUNCTIONAL,
     SETTING_PREMIUM_GET_PRIMIUM,
@@ -77,7 +77,6 @@ import {
     SETTING_PREMIUM_ON_HIED_AD_POSTS,
     SETTING_SHOWSE_POL,
     SETTING_UPDATE_CANCLE,
-    SETTING_UPDATE_PRIFIL,
     SETTING_UPLOAD_GROUP_LIST,
     SETTING_YOUR_ARE_GUEST,
     SETTING_YOUR_ARE_GUEST_ENTER,
@@ -86,7 +85,7 @@ import {
     TOOLTIP_PREMUIM
 } from "../constants/TextConstants";
 import axios from "axios";
-import {GUEST_HESH, HOST, STATISTOC_HOST, VERSION} from "../constants/config";
+import {GUEST_HESH, HEAD_HOST, HOST, STATISTOC_HOST, VERSION} from "../constants/config";
 import Icon24Back from '@vkontakte/icons/dist/24/back';
 import connect from '@vkontakte/vkui-connect';
 import {toast, ToastContainer} from 'react-toastify';
@@ -94,13 +93,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import "../css/setting.css"
 
 
-import Icon24Flash from "@vkontakte/icons/dist/24/flash";
-import ping from "../function/ping";
-
 export default class Setting extends React.Component {
     constructor(props) {
         super(props);
-        this.store=props.store;
+        this.store = props.store;
         this.dispatch = props.dispatch;
         this.dbRef = React.createRef();
 
@@ -122,7 +118,7 @@ export default class Setting extends React.Component {
             search: "",
             searchlen: 0,
             usersonline: Math.floor(Math.random() * 40) + 1,
-            offline:false
+            offline: false
         };
         var params = window.location.search;
         params = "{\"" +
@@ -199,15 +195,13 @@ export default class Setting extends React.Component {
         }
         window.onscroll = null;
         var main = this;
-        axios.get(HOST + "/user/", {
-            params: {
+        axios.post(HEAD_HOST + "/user/", {
                 type: "get_groups",
                 session: Cookies.get("hash")
-            }
         }).then((resp) => {
-            console.log(resp.data);
             main.setState({groups: resp.data["groups"]})
-        }).catch(()=>{
+        }).catch((e) => {
+            console.log("gLIST",e);
             main.offline();
         });
 
@@ -218,8 +212,6 @@ export default class Setting extends React.Component {
             }
         }).then((resp) => {
             main.setState({online: resp.data.data})
-        }).catch(()=>{
-            main.offline();
         });
 
         //------------INIT------------------------
@@ -238,7 +230,7 @@ export default class Setting extends React.Component {
         this.android = !['iPad', 'iPhone', 'iPod'].indexOf(navigator.platform) >= 0;
         let h = Math.floor((this.setting.timeinapp | 0) / 3600000);
         let m = Math.floor((this.setting.timeinapp | 0) % 3600000 / 60000);
-        var time =( h>0?(h + " час" + (h > 0 && h < 5 ? " " : "ов ") ):"") + m + " минут" + ((m > 0 && m % 10 < 5) ? "ы" : "");
+        var time = (h > 0 ? (h + " час" + (h > 0 && h < 5 ? "а " : "ов ")) : "") + m + " минут" + ((m > 0 && m % 10 < 5) ? "а" : "");
         this.setState({
             timeinapp: time
         })
@@ -246,12 +238,10 @@ export default class Setting extends React.Component {
 
     usualcancle(main) {
         window.onpopstate = function (e) {
-            if (main.close) {
-                window.history.back();
-                return true;
-            }
+            window.history.pushState({page: 2}, "terald", "");
+
             if (main.state.actPanel != "set") {
-                window.history.pushState({page: 2}, "setting", "");
+
 
                 if (main.state.actPanel == "shoisegroup") {
                     main.setState({actPanel: "groupList"});
@@ -261,9 +251,6 @@ export default class Setting extends React.Component {
                 return;
 
             }
-            for(var i =0;i<window.history.length;i++){
-                window.history.back();
-            }
             main.setState({
                 popout:
                     <Alert
@@ -271,14 +258,10 @@ export default class Setting extends React.Component {
                             title: 'Отмена',
                             autoclose: true,
                             style: 'cancel',
-                            action:()=>{
-                                window.history.pushState({page: 1}, "", "");
-                            }
                         }, {
                             title: "Выйти",
                             action: () => {
-                                e.preventDefault();
-                                window.history.back();
+                                connect.send("VKWebAppClose", {"status": "success"});
 
                             },
                             autoclose: true,
@@ -291,7 +274,7 @@ export default class Setting extends React.Component {
                         <h2>Подтвердите действие</h2>
                         <p>Вы действительно хотите выйти?</p>
                     </Alert>
-            })
+            });
 
         };
     }
@@ -312,14 +295,13 @@ export default class Setting extends React.Component {
         var main = this;
         var gr = [];
         for (var i in main.state.groups) {
-            gr.push(main.state.groups[i].username)
+            gr.push(main.state.groups[i].group_id)
         }
-        axios.get(HOST + "/user/", {
-            params: {
+        axios.post(HEAD_HOST + "/user/",
+            {
                 type: "set_groups",
                 session: Cookies.get("hash"),
                 groups: JSON.stringify(gr)
-            }
         }).then(
             (resp) => {
                 if (!stay) {
@@ -327,20 +309,16 @@ export default class Setting extends React.Component {
                     main.showtoast("Профиль обновлен", toast.TYPE.INFO, 3500);
                 }
             }
-        ).catch(()=>{
-            main.offline();
-        });
+        )
 
     }
 
 
     closeToast() {
-        this.state.toast -= 1;
+        this.state.toast = 0;
     }
-    offline(){
-        if(this.state.offline){
-            return;
-        }
+
+    offline() {
         var main = this;
         this.setState({
             popout:
@@ -348,20 +326,21 @@ export default class Setting extends React.Component {
                     actions={[{
                         title: 'ОК',
                         autoclose: true,
-                        action:()=>{
+                        action: () => {
 
                         }
-                    }, ]}
+                    },]}
                     onClose={() => {
                         main.setState({
-                            popout: null});
-                        // console.log(main.props.state)
-                        main.props.main.setState({activeStory:"base"})
+                            popout: null
+                        });
+
+                        main.props.main.setState({activeStory: "base"})
 
                     }}
                 >
-                    <h2>Соедение отсутсвует</h2>
-                    <p>Для доступа к настройкам необходимо интернет соеденение.</p>
+                    <h2>Соединение отсутствует</h2>
+                    <p>Для доступа к настройкам необходимо интернет-соеденение.</p>
                 </Alert>
         })
         // this.showtoast("Сервер не отвечает",toast.TYPE.ERROR);
@@ -373,7 +352,7 @@ export default class Setting extends React.Component {
         if (ntoast > 0) {
             return;
         }
-        this.state.toast += 1;
+        this.state.toast = 1;
 
         toast.info(text, {
             position: toast.POSITION.TOP_CENTER,
@@ -396,9 +375,8 @@ export default class Setting extends React.Component {
         axios.post(STATISTOC_HOST + "/bag_report/", {
             session: Cookies.get("hash"),
             bag_text: this.state.bagreport
-        }).catch(()=>{
-            main.offline();
-        });;
+        })
+        ;
         this.setState({bagreport: ""});
         this.showtoast("Сообщение отправлено", toast.TYPE.INFO);
 
@@ -452,25 +430,23 @@ export default class Setting extends React.Component {
         this.showtoast("Обновление запущено", toast.TYPE.INFO, 2700);
         var main = this;
         axios.get(HOST + '/update/', {
-                params: {
                     session: Cookies.get("hash"),
                     type: "user"
-                }
             }
         ).then(
             () => {
                 main.setState({actPanel: "set"})
             }
-        ).catch(()=>{
-            main.offline();
-        });;
+        )
+        ;
     }
 
     logout(enter = false, delet = false) {
         if (enter) {
             Cookies.set("auth", "false");
             Cookies.set("hash", "");
-            window.location.reload();
+            this.dispatch({"type":"CLEAR"});
+            this.props.main.setState({activeStory: "auth"});
             return;
         }
         Cookies.set("codewait", false);
@@ -479,7 +455,7 @@ export default class Setting extends React.Component {
                 <Alert
                     actionsLayout="vertical"
                     actions={[{
-                        title: 'Далее',
+                        title: delet?"Удалить":'Выйти',
                         autoclose: true,
                         style: 'destructive',
                         action: () => {
@@ -489,7 +465,8 @@ export default class Setting extends React.Component {
                             if (delet) {
                                 Cookies.set("ghash", "");
                             }
-                            window.location.reload();
+                            this.dispatch({"type":"CLEAR"});
+                            this.props.main.setState({activeStory: "auth"});
                         },
                     },
                         {
@@ -521,7 +498,7 @@ export default class Setting extends React.Component {
                 <Alert
                     actionsLayout="vertical"
                     actions={[{
-                        title: 'Далее',
+                        title: 'Продолжить',
                         autoclose: true,
                         action: this.putpremium,
                     },
@@ -580,7 +557,7 @@ export default class Setting extends React.Component {
                 main.setting.premium = true;
                 main.uloadsetting();
             } else if (e.detail.type === "VKWebAppAccessTokenFailed") {
-                main.showtoast("Публикация отклонена", toast.TYPE.ERROR);
+                // main.showtoast("Публикация отклонена", toast.TYPE.ERROR);
             }
         });
     }
@@ -589,11 +566,9 @@ export default class Setting extends React.Component {
 
         this.state.searchlen = search.length;
         var main = this;
-        axios.get(HOST + '/user/', {
-                params: {
+        axios.post(HEAD_HOST + '/user/', {
                     name: search,
                     type: "groups_list"
-                }
             }
         ).then(
             (resp) => {
@@ -820,25 +795,28 @@ export default class Setting extends React.Component {
 
                     {(this.state.groups && this.state.groups.length > 0) ?
                         <List>
+
                             <CellButton align={"center"} onClick={this.addGroup}>{SETTING_ADD_NEW_GROUP}</CellButton>
                             {
-                                Array.prototype.map.call(this.state.groups, function (gr, i) {
-                                    return (
-                                        <Cell key={i} onRemove={() => {
 
-                                            main.remove(gr.group_id);
-                                            main.uploadGL(true);
+                                    Array.prototype.map.call(this.state.groups, function (gr, i) {
+                                        return (
+                                            <Cell key={i} onRemove={() => {
 
-                                        }} removable={true} removePlaceholder={"Удалить"}
-                                              description={"@" + gr.username}
-                                              before={<Avatar src={gr.icon}/>}>{gr.name}</Cell>
-                                    );
-                                })
+                                                main.remove(gr.group_id);
+                                                main.uploadGL(true);
+
+                                            }} removable={true} removePlaceholder={"Удалить"}
+                                                  description={"@" + gr.username}
+                                                  before={<Avatar src={gr.icon}/>}>{gr.name}</Cell>
+                                        );
+                                    })
                             }
 
                         </List>
                         :
-                        <CellButton align={"center"} onClick={this.addGroup}>{SETTING_ADD_NEW_GROUP}</CellButton>
+                        <CellButton align={"center"} onClick={this.addGroup}>{SETTING_ADD_FIRST_GROUP}</CellButton>
+
                     }
 
                 </Group>

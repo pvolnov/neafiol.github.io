@@ -27,12 +27,12 @@ import Icon24Back from '@vkontakte/icons/dist/24/back';
 import connect from '@vkontakte/vkui-connect-promise';
 import Cookies from "js-cookie";
 import axios from "axios";
-import {GUEST_HESH, HOST} from "../constants/config";
+import {GUEST_HESH, HEAD_HOST, HOST} from "../constants/config";
 import {ALERT_AUTH_CANSEL_YOUR_SESSION, ALERT_AUTH_TEXT, USERDEAL} from "../constants/TextConstants";
 import {COUNTRIES, GROUP_TYPES} from "../constants/ContentConstants";
 import {toast, ToastContainer} from "react-toastify";
 import Icon24Flash from '@vkontakte/icons/dist/24/flash';
-import {ping} from "../function";
+
 
 export default class AuthForm extends React.Component {
     constructor(props) {
@@ -82,7 +82,7 @@ export default class AuthForm extends React.Component {
             });
             Cookies.set("codewait", false);
         }
-        console.log(Cookies.get("codewait"));
+
         if (Cookies.get("ghash")) {
             this.state.guest = false;
         }
@@ -100,14 +100,11 @@ export default class AuthForm extends React.Component {
     usualcancle(main) {
 
         window.onpopstate = function (e) {
+            window.history.pushState({page: 2}, "auth", "");
 
             if (main.state.actPanel != "telauth") {
-                window.history.pushState({page: 2}, "auth", "");
                 main.setState({actPanel: "telauth"});
                 return;
-            }
-            for (var i = 0; i < window.history.length; i++) {
-                window.history.back();
             }
             main.setState({
                 popout:
@@ -116,18 +113,14 @@ export default class AuthForm extends React.Component {
                             title: 'Отмена',
                             autoclose: true,
                             style: 'cancel',
-                            action: () => {
-                                window.history.pushState({page: 1}, "", "");
-                            }
                         }, {
                             title: "Выйти",
                             action: () => {
-                                e.preventDefault();
-                                window.history.back();
+                                connect.send("VKWebAppClose", {"status": "success"});
 
                             },
                             autoclose: true,
-                            style: "destructive"
+                            style:"destructive"
                         }]}
                         onClose={() => {
                             main.setState({popout: null});
@@ -136,7 +129,7 @@ export default class AuthForm extends React.Component {
                         <h2>Подтвердите действие</h2>
                         <p>Вы действительно хотите выйти?</p>
                     </Alert>
-            })
+            });
 
         };
     }
@@ -274,12 +267,9 @@ export default class AuthForm extends React.Component {
                 this.setState({popout: null});
                 return;
             }
-            this.httpClient.get(HOST + '/auth/', {
-                params: {
+            this.httpClient.post(HEAD_HOST + '/auth/', {
                     page: 3,
-                    setting: this.state.user_info
-                }
-
+                    settings: this.state.user_info
             })
                 .then(function (response) {
                     // response = (response.data);
@@ -295,7 +285,7 @@ export default class AuthForm extends React.Component {
                         Cookies.set("ghash", res['session']);
                         Cookies.set("auth", "ok");
                         setTimeout(() => {
-                                window.location.reload()
+                                main.props.main.setState({activeStory:"base"});
                             },
                             1000);
 
@@ -314,6 +304,9 @@ export default class AuthForm extends React.Component {
             });
         }
         if (this.state.actPanel === "verficode") {
+            this.setState({
+                popout: <ScreenSpinner/>,
+            });
 
             this.httpClient.get(HOST + '/auth/', {
                 params: {
@@ -341,11 +334,7 @@ export default class AuthForm extends React.Component {
                             phone: main.state.phone
                         }));
                         setTimeout(() => {
-                                if(ping())
-                                    window.location.reload();
-                                else {
-                                    main.showtoast("Нет соединения с интернетом",toast.TYPE.ERROR);
-                                }
+                                main.props.main.setState({activeStory:"base"});
                             },
                             29500);
                         setInterval(() => {
@@ -378,22 +367,14 @@ export default class AuthForm extends React.Component {
         } else {
             Cookies.set("hash", GUEST_HESH);
         }
-        if(ping())
-            window.location.reload();
-        else {
-            this.showtoast("Нет соединения с интернетом",toast.TYPE.ERROR);
-        }
+        this.props.main.setState({activeStory:"base"});
     }
 
     logINoldAccount(e) {
         Cookies.set("auth", "ok");
         Cookies.set("hash", this.state.tg_auth.hash);
 
-        if(ping())
-        window.location.reload();
-        else {
-            this.showtoast("Нет соединения с интернетом",toast.TYPE.ERROR);
-        }
+        this.props.main.setState({activeStory:"base"});
     }
 
     generateProfil() {
@@ -466,7 +447,7 @@ export default class AuthForm extends React.Component {
                     }}>пользовательского соглашения</Link> </Checkbox>
                 </FormLayout>
                 <Group title="Другие способы входа">
-                    {this.state.guest && <CellButton size="m" onClick={this.logINasGues}>Войти как гость</CellButton>}
+                    {(this.state.guest && !this.state.tg_auth) && <CellButton size="m" onClick={this.logINasGues}>Войти как гость</CellButton>}
                     {this.state.guest &&
                     <CellButton size="m" onClick={this.generateProfil}>Сгенерировать профиль</CellButton>}
                     {!this.state.guest &&

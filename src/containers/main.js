@@ -41,9 +41,10 @@ import {WidgetRecordList,RecordList,RecordSavedList} from '../containers'
 import Cookies from "js-cookie";
 import { Provider as AlertProvider } from 'react-alert'
 import AlertTemplate from 'react-alert-template-basic'
-import {CONSTANT_USER, GUEST_HESH, SERVER_ERROR, VERSION} from "../constants/config";
+import {CONSTANT_USER, GUEST_HESH, SERVER_ERROR, WEB_HOST} from "../constants/config";
 import ErrorPage from "../components/ErrorPage";
 import OnePost from "../components/OnePost";
+import axios from "axios";
 
 
 class AppT extends React.Component {
@@ -58,7 +59,7 @@ class AppT extends React.Component {
             activePanel: 'main',
             activeStory:"base",
             premium:false,
-            error_page:SERVER_ERROR
+            error_page:false
         };
         this.onStoryChange = this.onStoryChange.bind(this);
         this.changePanel = this.changePanel.bind(this);
@@ -82,14 +83,29 @@ class AppT extends React.Component {
 
     }
     componentWillMount() {
+        var main = this;
+
+        axios.post(WEB_HOST + '/webinfo/', {
+                session: Cookies.get('hash'),
+            },
+        ).then((r)=> {
+                if (r.data.status == "sleep") {
+                    main.setState({error_page: true})
+                }
+            }
+        ).catch((e)=>{
+            if (SERVER_ERROR){
+                main.setState({error_page: true})
+            }
+        });
         if(CONSTANT_USER){
             Cookies.set("hash", GUEST_HESH);
             Cookies.set("auth", "ok");
         }
 
+
+
     }
-
-
 
     componentDidMount() {
         // localStorage.clear();
@@ -104,12 +120,7 @@ class AppT extends React.Component {
         if(this.setting.btheme){
             document.body.setAttribute("scheme","client_dark");
         }
-        var v =Cookies.get("version");
-        if(v!=VERSION){
-            Cookies.set("version",VERSION);
-            localStorage.setItem("savedR","");
-            localStorage.setItem("listsavedR","");
-        }
+
         // if(this.setting['ui']==="tg"){
         //     this.setState({activeStory:"wigetsrecord"})
         // }
@@ -155,6 +166,7 @@ class AppT extends React.Component {
     onStoryChange(e) {
         if(this.state.activeStory===e.currentTarget.dataset.story){
             if(this.scroll){
+                console.log("Anim")
                 return;
             }
 
@@ -171,6 +183,9 @@ class AppT extends React.Component {
                 main.scroll=false;
 
             },600)
+            else {
+                main.scroll=false;
+            }
         }
         else
         this.setState({activeStory: e.currentTarget.dataset.story})
@@ -236,7 +251,7 @@ class AppT extends React.Component {
                 <RecordSavedList store={this.store.saveds} dispatch={this.dispatch}  id={"saved"}/>
                 {false &&
                 <WidgetRecordList store={this.store.wrecord} dispatch={this.dispatch} id={"wigetsrecord"}/>}
-                <AuthForm id={"auth"}/>
+                <AuthForm id={"auth"} main={this}/>
                 <OnePost post_id={this.params.post} id={"onepost"}/>
                 <ErrorPage id={"epage"}/>
             </Epic>

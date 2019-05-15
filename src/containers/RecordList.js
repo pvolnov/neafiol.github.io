@@ -15,7 +15,7 @@ import {
     View
 } from '@vkontakte/vkui';
 import Cookies from "js-cookie";
-import {HOST, STATISTOC_HOST} from '../constants/config'
+import {HEAD_HOST, HOST, STATISTOC_HOST} from '../constants/config'
 import connect from '@vkontakte/vkui-connect';
 import {toast, ToastContainer} from "react-toastify";
 import {ping} from "../function";
@@ -42,7 +42,6 @@ export default class RecordList extends React.Component {
             offline:false,
             fullphoto: {url: ""}
         };
-        console.log("uploading: true");
 
         this.uploadnews = this.uploadnews.bind(this);
         this.getstatistic = this.getstatistic.bind(this);
@@ -56,10 +55,12 @@ export default class RecordList extends React.Component {
         this.cond = {
             isnew: true
         };
+        this.stopupload=false;
 
     }
     refresh(){
         var main = this;
+        this.dispatch({"type":"CLEAR"});
         this.setState({
             menu:[],
             fetching:true
@@ -78,7 +79,9 @@ export default class RecordList extends React.Component {
                 this.uploadnews(-1);
                 setTimeout(this.getstatistic, 2000, [], 0);
             } else {
+                setTimeout(this.getstatistic, 2000, [], 0);
                 this.setState({
+                    isuploading:false,
                     menu: this.store.list
                 });
             }
@@ -96,11 +99,7 @@ export default class RecordList extends React.Component {
         };
 
         window.onpopstate = (e) => {
-
-            for(var i =0;i<window.history.length;i++){
-                window.history.back();
-            }
-
+            window.history.pushState({page: 1}, "main", "");
             main.setState({
                 popout:
                     <Alert
@@ -108,14 +107,10 @@ export default class RecordList extends React.Component {
                             title: 'Отмена',
                             autoclose: true,
                             style: 'cancel',
-                            action:()=>{
-                                window.history.pushState({page: 1}, "", "");
-                            }
                         }, {
                             title: "Выйти",
                             action: () => {
-                                e.preventDefault();
-                                window.history.back();
+                                connect.send("VKWebAppClose", {"status": "success"});
 
                             },
                             autoclose: true,
@@ -212,6 +207,7 @@ export default class RecordList extends React.Component {
                     mas = mas1;
                 }
             );
+            console.log("sent stat");
             var setting = {};
             if (Cookies.get("Setting") != null)
                 setting = JSON.parse(Cookies.get("Setting"));
@@ -233,33 +229,24 @@ export default class RecordList extends React.Component {
     checkend(elem) {
         if (!this.state.menu) return;
         if (this.state.isuploading || this.state.menu.length < 5) {
-            // console.log("uploading",elem);
             return;
         }
+
         var i = 0;
         var n = this.state.menu.length < 10 ? 6 : 9;
         // console.log(elem);
-        while (i < n) {
-            i++;
-            if (elem === this.state.menu.length - i) {
-                // console.log("UPLOAD ",this.state.menu.length,i);
-                this.uploadnews(1);
-                break;
-            }
 
+        if (elem > this.state.menu.length - n) {
+            if(this.stopupload)return;
+            console.log("UPLOAD ",this.state.menu.length,i);
+            this.uploadnews(1);
         }
+
+
     }
 
     //spesial request that get some recirds from server
     uploadnews(type = 0) {
-        // if (this.cond.offline) {
-        //     this.cond.offline = !ping();
-        //     return;
-        // }
-        // if (type != 1 && !ping()) {
-        //     this.cond.offline = true;
-        //     this.showtoast("Соеденение с сервером потеряно", toast.TYPE.WARNING)
-        // }
 
         var count = 0;
         var post_now = this.state.menu && this.state.menu.length;
@@ -269,7 +256,7 @@ export default class RecordList extends React.Component {
             type = 0;
         }
         var main = this;
-        console.log("AUTAPLOAD ", type);
+        // console.log("AUTAPLOAD ", type);
         this.setState({
             isuploading: true,
             fetching:false
@@ -287,14 +274,11 @@ export default class RecordList extends React.Component {
                 main.setState({gloabaluploading: true});
 
 
-                this.httpClient.get(HOST + '/get/', {
-                        params: {
+                this.httpClient.post(HEAD_HOST + '/get/', {
                             amount: count,
                             type: type,
                             post_now: post_now,
                             session: Cookies.get('hash'),
-                            get: 1
-                        }
                     }
                 ).then((res) => {
                     if (res.data["status"] === "_wrong_session") {
@@ -304,20 +288,21 @@ export default class RecordList extends React.Component {
                         window.location.reload();
                         return;
                     }
-
                     res = res.data;
-
-
+                    if(res['posts'].length<149){
+                        main.stopupload=true;
+                    }
                     var new_posts = main.store.full_list;
                     new_posts = new_posts.concat(res['posts']);
-                    main.dispatch({type: 'UPDATE_RECORD_LIST', data: new_posts});
+                    main.dispatch({type: 'UPDATE_RECORD_LIST', data: new_posts.slice()});
                     setTimeout(() => {
-                        main.setState({gloabaluploading: false});
-                    }, 3000);
+                        main.setState({
+                            gloabaluploading: false,
+                            isuploading: false});
+                    }, 2000);
 
                     main.setState({
                         fetching: false,
-                        isuploading: false,
                         popout: null
                     });
 
@@ -343,6 +328,7 @@ export default class RecordList extends React.Component {
             }
             case 1: {
 
+
                 setTimeout(() => {
                     main.setState({
                         isuploading: false
@@ -359,7 +345,7 @@ export default class RecordList extends React.Component {
                     this.state.menu.push(p)
                 }
                 this.forceUpdate();
-                this.dispatch({type: 'RECORDS_UPDATE', data: this.state.menu});
+                this.dispatch({type: 'RECORDS_UPDATE', data: this.state.menu.slice()});
 
                 if (full_list.length - 30 < this.state.menu.length) {
                     this.uploadnews(0)
@@ -378,29 +364,31 @@ export default class RecordList extends React.Component {
                 popout: <ScreenSpinner/>,
                 fetching: false
             });
-            this.httpClient.get(HOST + '/get/', {
-                    params: {
+            this.httpClient.post(HEAD_HOST + '/get/', {
                         amount: 15,
                         type: -1,
                         post_now: 0,
-                        session: Cookies.get('hash'),
-                        get: 1
-                    }
+                        session: Cookies.get('hash')
                 }
             ).then((resp) => {
-                console.log(resp);
                 if (resp.data.status !== "ok") {
                     main.showtoast(resp.data.status, toast.TYPE.ERROR)
                 }
-
+                // console.log(resp.data.posts)
                 main.setState({
                     menu: resp.data.posts,
                     fetching: false,
                     popout: null
                 });
-                main.dispatch({type: 'RECORDS_UPDATE', data: main.state.menu});
+                if(resp.data.posts.length==0){
+                    main.setState({
+                        isuploading:false,
+                        gloabaluploading:false
+                    })
+                }
+                main.dispatch({type: 'RECORDS_UPDATE', data: resp.data.posts.slice()});
             })
-                .catch(() => {
+                .catch((e) => {
                 main.setState({
                     fetching: false,
                     popout: null
@@ -466,7 +454,7 @@ export default class RecordList extends React.Component {
                         (this.state.isuploading || this.state.gloabaluploading) ?
 
                             (
-                                (this.state.menu && this.state.menu.length > 0) &&
+                                (!this.state.isuploading || this.state.menu && this.state.menu.length > 0) &&
                                 <Footer className={"noselect"}>Загрузка...</Footer>
                             )
 

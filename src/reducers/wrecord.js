@@ -5,6 +5,9 @@ export  default function wrecord(state = [], action) {
         case 'WIDGETS_UPDATE':
             state.list=action.data;
             return state;
+        case 'CLEAR':
+            state = [];
+            return state;
         default:
             return state
     }

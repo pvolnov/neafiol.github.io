@@ -15,6 +15,9 @@ export  default function saveds(state = {y:0,menu:[],history:0}, action) {
     case 'HISTORY':
       state.history=action.data;
       return state;
+    case 'CLEAR':
+      state = {y:0,menu:[],history:0};
+      return state;
     default:
       return state
   }

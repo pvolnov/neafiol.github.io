@@ -3,7 +3,7 @@ import axios from "axios";
 
 import {Div, Panel,CellButton, View,Group,ScreenSpinner,PanelHeader} from "@vkontakte/vkui";
 import Record from "../components/Record";
-import {HOST, STATISTOC_HOST, VK_APPS_URL} from '../constants/config'
+import {HEAD_HOST, HOST, STATISTOC_HOST, VK_APPS_URL} from '../constants/config'
 
 import Cookies from "js-cookie";
 
@@ -25,13 +25,9 @@ export default class OnePost extends React.Component {
             // fetching: false
         });
         var main = this;
-        axios.get(HOST + '/preview/', {
-                params: {
+        axios.post(HEAD_HOST + '/one/', {
                     post_id:this.state.post_id,
-                    type:"one_post",
-                    get: 1
                 }
-            }
         ).then((resp)=>{
             main.setState({
                 item:resp.data.post,
@@ -45,9 +41,6 @@ export default class OnePost extends React.Component {
     mainpage(){
             window.location.replace(VK_APPS_URL);
     }
-
-
-
 
     render() {
         var item = this.state.item;

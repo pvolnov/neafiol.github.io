@@ -6,6 +6,7 @@ export  default function record(state = {list:[],full_list:[],fullphoto:{},actPa
 
   switch (action.type) {
     case "RECORDS_UPDATE":
+
       state.list =  action.data;
       return state;
     case 'SET_MAIN_Y':
@@ -19,6 +20,9 @@ export  default function record(state = {list:[],full_list:[],fullphoto:{},actPa
       return state;
     case 'HISTORY':
       state.history=action.data;
+      return state
+    case 'CLEAR':
+      state = {list:[],full_list:[],fullphoto:{},actPanel:"main",history:0}
       return state;
     default:
       return state

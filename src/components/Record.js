@@ -52,6 +52,7 @@ export default class Record extends React.Component {
         var text = props.text || "";
         var entities = props.entities;
         text = this.textprepare(text, entities);
+
         var stext = (text).substr(0, 500);
 
         stext = stext.replace(/\s\S+$/giu, "");
@@ -108,6 +109,8 @@ export default class Record extends React.Component {
             this.state.article.title = title;
         } catch (e) {
         }
+
+
 
     }
 
@@ -174,35 +177,48 @@ export default class Record extends React.Component {
     }
 
     textprepare(text, entities) {
-        var lastlet = text.length;
+
 
         if (!entities) {
             return text;
         }
+        // console.log(entities);
+        let lastlet = text.length;
 
-        for (var e of entities.reverse()) {
-            if (lastlet < e['offset']) continue;
+        for (var e of entities.slice().reverse()) {
+
+            if (lastlet < e['offset']) {
+                continue;
+            }
+
             var ds = text.substr(e['offset'], e['length']);
             var fs = text.substr(0, e['offset']);
             var ls = text.substr(e['offset'] + e['length']);
+
+
+
             if (e['_'] === "MessageEntityTextUrl") {
                 ds = `<a  href="${e['url']}">${ds}</a>`;
-            }
+            }else
             if (e['_'] === "MessageEntityUrl") {
+                // console.log(ds);
                 ds = `<a class="url"  href="${ds}">${ds}</a>`;
-            }
+            }else
             if (e['_'] === "MessageEntityMention") {
                 ds = ds.replace("@", "");
                 ds = `<a  href="https://t.me/${ds}">@${ds}</a>`;
-            }
+            }else
             if (e['_'] === "MessageEntityBold") {
                 ds = `<strong>${ds}</strong>`;
-            }
+            }else
             if (e['_'] === "MessageEntityItalic") {
                 ds = `<em>${ds}</em>`;
-            }
+            }else
             if (e['_'] === "MessageEntityHashtag") {
                 ds = `<span class="hashtag">${ds}</span>`;
+            }
+            else {
+                console.log(e['_'])
             }
             text = fs + ds + ls;
             lastlet = e['offset'];

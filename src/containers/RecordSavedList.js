@@ -18,6 +18,7 @@ import {
 } from '@vkontakte/vkui';
 import Icon24Delete from '@vkontakte/icons/dist/24/delete';
 import Icon16Dropdown from '@vkontakte/icons/dist/16/dropdown';
+import connect from "@vkontakte/vkui-connect-promise";
 
 export default class RecordSavedList extends React.Component {
     constructor(props) {
@@ -63,10 +64,7 @@ export default class RecordSavedList extends React.Component {
         window.scrollTo( 0, this.store.y  );
 
         window.onpopstate = function(e) {
-            for(var i =0;i<window.history.length;i++){
-                window.history.back();
-            }
-
+            window.history.pushState({page: 1}, "save", "");
             main.setState({
                 popout:
                     <Alert
@@ -74,14 +72,10 @@ export default class RecordSavedList extends React.Component {
                             title: 'Отмена',
                             autoclose: true,
                             style: 'cancel',
-                            action:()=>{
-                                window.history.pushState({page: 1}, "", "");
-                            }
                         }, {
                             title: "Выйти",
                             action: () => {
-                                e.preventDefault();
-                                window.history.back();
+                                connect.send("VKWebAppClose", {"status": "success"});
 
                             },
                             autoclose: true,
@@ -94,7 +88,7 @@ export default class RecordSavedList extends React.Component {
                         <h2>Подтвердите действие</h2>
                         <p>Вы действительно хотите выйти?</p>
                     </Alert>
-            })
+            });
 
         };
         window.onscroll = () => {
