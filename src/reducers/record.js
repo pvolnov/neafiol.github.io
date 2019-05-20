@@ -20,9 +20,11 @@ export  default function record(state = {list:[],full_list:[],fullphoto:{},actPa
       return state;
     case 'HISTORY':
       state.history=action.data;
-      return state
+      return state;
     case 'CLEAR':
-      state = {list:[],full_list:[],fullphoto:{},actPanel:"main",history:0}
+      state.y=0;
+      state.list=[];
+      state.full_list=[];
       return state;
     default:
       return state

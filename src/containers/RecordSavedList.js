@@ -12,13 +12,15 @@ import {
     List,
     Panel,
     PanelHeader,
-    PanelHeaderContent,
+    PanelHeaderContent, platform,
     ScreenSpinner,
     View
 } from '@vkontakte/vkui';
 import Icon24Delete from '@vkontakte/icons/dist/24/delete';
 import Icon16Dropdown from '@vkontakte/icons/dist/16/dropdown';
 import connect from "@vkontakte/vkui-connect-promise";
+import {IOS} from "@vkontakte/vkui/src/lib/platform";
+import Cookies from "js-cookie";
 
 export default class RecordSavedList extends React.Component {
     constructor(props) {
@@ -33,8 +35,8 @@ export default class RecordSavedList extends React.Component {
 
         } catch (e) {
             var m = [];
-            localStorage.setItem("listsavedR", "");
-            localStorage.setItem("savedR", "");
+            localStorage.setItem("listsavedR", "[]");
+            localStorage.setItem("savedR", "[]");
         }
 
 
@@ -53,18 +55,24 @@ export default class RecordSavedList extends React.Component {
         this.toggleContext = this.toggleContext.bind(this);
 
     }
-
     componentWillMount() {
-        var main = this;
-
-
+        if (Cookies.get("Setting") != null)
+            this.setting = JSON.parse(Cookies.get("Setting"));
+        else {
+            this.setting={};
+        }
     }
+    componentDidCatch(error, errorInfo) {
+        localStorage.clear();
+        window.location.reload();
+    }
+
     componentDidMount() {
         var main = this;
         window.scrollTo( 0, this.store.y  );
 
         window.onpopstate = function(e) {
-            window.history.pushState({page: 1}, "save", "");
+            window.history.pushState(null, null, window.location.pathname);
             main.setState({
                 popout:
                     <Alert
@@ -89,14 +97,15 @@ export default class RecordSavedList extends React.Component {
                         <p>Вы действительно хотите выйти?</p>
                     </Alert>
             });
+            return false;
 
         };
         window.onscroll = () => {
             var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement).scrollTop;
             main.dispatch({type: 'SET_SAVED_Y', data: posTop});
         };
+        this.android =  (platform() != IOS);
 
-        this.android= !['iPad', 'iPhone', 'iPod'].indexOf(navigator.platform) >= 0;
     }
 
     clearAll(e) {
@@ -111,8 +120,8 @@ export default class RecordSavedList extends React.Component {
                     }, {
                         title: "Удалить",
                         action: () => {
-                            localStorage.setItem("savedR", "");
-                            localStorage.setItem("listsavedR", "");
+                            localStorage.setItem("savedR", "[]");
+                            localStorage.setItem("listsavedR", "[]");
                             main.setState({
                                 menu: [],
                                 contextOpened: false,
@@ -149,15 +158,18 @@ export default class RecordSavedList extends React.Component {
                 </button>
             ));
 
-            rlist.push(
-                <div key={i} role={"StatisticInfo"} identy={item['post_id']} type={item['type'] || 0}>
-                    <Record
-                        saved={true}
-                        parents={main}
-                        state={item}
-                    />
-                </div>
-            );
+                rlist.push(
+                    <div key={i} role={"StatisticInfo"} identy={item['post_id']} type={item['type'] || 0}>
+                        <Record
+                            saved={true}
+                            parents={main}
+                            record={item}
+                            setting={this.setting}
+                        />
+                    </div>
+                );
+
+
         }
         return rlist;
     };

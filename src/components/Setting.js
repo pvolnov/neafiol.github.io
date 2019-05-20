@@ -8,6 +8,7 @@ import {
     Cell,
     CellButton,
     Checkbox,
+    FixedLayout,
     Div,
     Footer,
     FormLayout,
@@ -67,14 +68,15 @@ import {
     SETTING_INFO_DEBAG_TOP,
     SETTING_INFO_TITLE,
     SETTING_LOGOUT, SETTING_NOONE_NEW_GROUP,
-    SETTING_PLASEHODER_NOT_FOUND,
+    SETTING_PLASEHODER_NOT_FOUND, SETTING_PREMIUM_DUBLE_SAVE_BTN,
     SETTING_PREMIUM_FUNCTIONAL,
     SETTING_PREMIUM_GET_PRIMIUM,
     SETTING_PREMIUM_GET_VIEW_STAT,
+    SETTING_PREMIUM_MARK_AD_POSTS,
     SETTING_PREMIUM_ON_AD_POSTS,
     SETTING_PREMIUM_ON_ADBLOCK,
     SETTING_PREMIUM_ON_BLACK_THEME,
-    SETTING_PREMIUM_ON_HIED_AD_POSTS,
+    SETTING_PREMIUM_ON_HIED_AD_POSTS, SETTING_PREMIUM_WRAP_AD_POSTS,
     SETTING_SHOWSE_POL,
     SETTING_UPDATE_CANCLE,
     SETTING_UPLOAD_GROUP_LIST,
@@ -139,6 +141,7 @@ export default class Setting extends React.Component {
         this.uloadsetting = this.uloadsetting.bind(this);
         this.change = this.change.bind(this);
         this.switch = this.switch.bind(this);
+        this.setratio = this.setratio.bind(this);
         this.getpremuim = this.getpremuim.bind(this);
         this.putpremium = this.putpremium.bind(this);
         this.uloadgrouplist = this.uloadgrouplist.bind(this);
@@ -166,10 +169,10 @@ export default class Setting extends React.Component {
             this.setState({guest: true})
         }
         //------------INIT-----------------------
-        if (Cookies.get("new") === "true") {
+        if (Cookies.get("new_set") === "true") {
             this.setState({tooltip: true});
             this.setState({tooltip2: true});
-            Cookies.set("new", "false");
+            Cookies.set("new_set", "false");
         }
 
         try {
@@ -196,12 +199,12 @@ export default class Setting extends React.Component {
         window.onscroll = null;
         var main = this;
         axios.post(HEAD_HOST + "/user/", {
-                type: "get_groups",
-                session: Cookies.get("hash")
+            type: "get_groups",
+            session: Cookies.get("hash")
         }).then((resp) => {
             main.setState({groups: resp.data["groups"]})
         }).catch((e) => {
-            console.log("gLIST",e);
+            console.log("gLIST", e);
             main.offline();
         });
 
@@ -218,6 +221,7 @@ export default class Setting extends React.Component {
     }
 
     componentDidMount() {
+        console.log("SETTING AUTH");
         var main = this;
         window.onscroll = () => {
             var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement).scrollTop;
@@ -226,19 +230,30 @@ export default class Setting extends React.Component {
 
         window.scrollTo(0, this.store.y);
 
-        this.usualcancle(this);
-        this.android = !['iPad', 'iPhone', 'iPod'].indexOf(navigator.platform) >= 0;
+        this.baseOnpopstate(this);
+        this.android = (platform() != IOS);
         let h = Math.floor((this.setting.timeinapp | 0) / 3600000);
         let m = Math.floor((this.setting.timeinapp | 0) % 3600000 / 60000);
-        var time = (h > 0 ? (h + " час" + (h > 0 && h < 5 ? "а " : "ов ")) : "") + m + " минут" + ((m > 0 && m % 10 < 5) ? "а" : "");
+        var time = (h > 0 ? (h + " час" + h > 1 && (h > 1 && h < 5 ? "а " : "ов ")) : "") + m + " минут" + ((m > 0 && m < 5) ? "ы" : "");
         this.setState({
             timeinapp: time
         })
     }
 
-    usualcancle(main) {
+
+    componentDidCatch(error, errorInfo) {
+        console.log(errorInfo);
+        var main = this;
+        axios.post(STATISTOC_HOST+"/bag_report/",{
+            bag_text:"Setting render crash: "+main.state.info + "\nError:"+error,
+            session:Cookies.get("hash")
+        });
+        window.location.reload();
+    }
+
+    baseOnpopstate(main) {
         window.onpopstate = function (e) {
-            window.history.pushState({page: 2}, "terald", "");
+            window.history.pushState(null, null, window.location.pathname);
 
             if (main.state.actPanel != "set") {
 
@@ -265,7 +280,7 @@ export default class Setting extends React.Component {
 
                             },
                             autoclose: true,
-                            style:"destructive"
+                            style: "destructive"
                         }]}
                         onClose={() => {
                             main.setState({popout: null});
@@ -275,6 +290,7 @@ export default class Setting extends React.Component {
                         <p>Вы действительно хотите выйти?</p>
                     </Alert>
             });
+            return false;
 
         };
     }
@@ -302,7 +318,7 @@ export default class Setting extends React.Component {
                 type: "set_groups",
                 session: Cookies.get("hash"),
                 groups: JSON.stringify(gr)
-        }).then(
+            }).then(
             (resp) => {
                 if (!stay) {
                     main.setState({actPanel: "set"})
@@ -334,9 +350,7 @@ export default class Setting extends React.Component {
                         main.setState({
                             popout: null
                         });
-
-                        main.props.main.setState({activeStory: "base"})
-
+                        main.props.main.setState({activeStory: "base"});
                     }}
                 >
                     <h2>Соединение отсутствует</h2>
@@ -405,6 +419,17 @@ export default class Setting extends React.Component {
 
     switch(e) {
         this.setting[e.target.name] = !(this.setting[e.target.name]);
+        this.setState({
+            setting:this.setting
+        });
+        this.uloadsetting();
+    }
+    setratio(e) {
+        this.setting[e.target.name] = {};
+        this.setting[e.target.name][e.target.value] =  true;
+        this.setState({
+            setting:this.setting
+        });
         this.uloadsetting();
     }
 
@@ -430,8 +455,8 @@ export default class Setting extends React.Component {
         this.showtoast("Обновление запущено", toast.TYPE.INFO, 2700);
         var main = this;
         axios.get(HOST + '/update/', {
-                    session: Cookies.get("hash"),
-                    type: "user"
+                session: Cookies.get("hash"),
+                type: "user"
             }
         ).then(
             () => {
@@ -445,8 +470,9 @@ export default class Setting extends React.Component {
         if (enter) {
             Cookies.set("auth", "false");
             Cookies.set("hash", "");
-            this.dispatch({"type":"CLEAR"});
+            this.dispatch({"type": "CLEAR"});
             this.props.main.setState({activeStory: "auth"});
+
             return;
         }
         Cookies.set("codewait", false);
@@ -455,17 +481,21 @@ export default class Setting extends React.Component {
                 <Alert
                     actionsLayout="vertical"
                     actions={[{
-                        title: delet?"Удалить":'Выйти',
+                        title: delet ? "Удалить" : 'Выйти',
                         autoclose: true,
                         style: 'destructive',
                         action: () => {
+                            if (delet) {
+                                this.setting = {};
+                                this.uloadsetting();
+                                Cookies.set("ghash", "");
+                            }
+
                             Cookies.set("auth", "false");
                             Cookies.set("hash", "");
                             Cookies.set("codewait", false);
-                            if (delet) {
-                                Cookies.set("ghash", "");
-                            }
-                            this.dispatch({"type":"CLEAR"});
+
+                            this.dispatch({"type": "CLEAR", data: {}});
                             this.props.main.setState({activeStory: "auth"});
                         },
                     },
@@ -567,8 +597,8 @@ export default class Setting extends React.Component {
         this.state.searchlen = search.length;
         var main = this;
         axios.post(HEAD_HOST + '/user/', {
-                    name: search,
-                    type: "groups_list"
+                name: search,
+                type: "groups_list"
             }
         ).then(
             (resp) => {
@@ -636,9 +666,11 @@ export default class Setting extends React.Component {
         var main = this;
         return (<View popout={this.state.popout} id={this.state.id} activePanel={this.state.actPanel}>
 
-            <Panel id="set" className={"noselect"}>
-                <ToastContainer/>
+            <Panel id="set" >
                 <PanelHeader>{SETTING_HEAD}</PanelHeader>
+                <FixedLayout vertical="top">
+                    <ToastContainer/>
+                </FixedLayout>
 
                 <Tooltip offsetX={10} onClose={() => this.setState({tooltip: false})} isShown={this.state.tooltip}
                          text={TOOLTIP_PERSONAL_DATA}>
@@ -660,7 +692,7 @@ export default class Setting extends React.Component {
                             </Select>
                         </FormLayout>
                         <FormLayout>
-                        <Textarea onChange={this.change} maxLength="200" defaultValue={this.state.setting.hashteg}
+                        <Textarea onChange={this.change} maxLength="140" defaultValue={this.state.setting.hashteg}
                                   name={"hashteg"}
                                   top={SETTING_HASHTEGS_TOP} placeholder={SETTING_HASHTEGS_PLASEHODER}/>
                         </FormLayout>
@@ -679,19 +711,36 @@ export default class Setting extends React.Component {
                                                     name={"adblock"} disabled={!this.state.premium}/>}>
                             {SETTING_PREMIUM_ON_ADBLOCK}
                         </Cell>
+                        {
+                            this.state.setting.adblock &&
+                            <FormLayout>
+                                <div>
+                                    <Radio disabled={(!this.setting.adblock)} value={"wrapadpost"}
+                                           onClick={this.setratio} defaultChecked={this.state.setting.adstatus.wrapadpost}
+                                           name={"adstatus"} description={"Предполагаемые рекламные посты будут скрыты"}
+                                    >{SETTING_PREMIUM_WRAP_AD_POSTS}</Radio>
+
+                                    <Radio disabled={(!this.setting.adblock)} value={"hideadvpost"}
+                                           onClick={this.setratio} defaultChecked={this.state.setting.adstatus.hideadvpost}
+                                           name={"adstatus"} description={"Предполагаемая реклама будет удаляться из Вашей ленты"}
+                                    >{SETTING_PREMIUM_ON_HIED_AD_POSTS}</Radio>
+
+                                    <Radio disabled={(!this.setting.adblock)} value={"markadvpost"}
+                                           onClick={this.setratio} defaultChecked={this.state.setting.adstatus.markadvpost}
+                                           name={"adstatus"} description={"Под рекламой будет пометка ₽"}
+                                    >{SETTING_PREMIUM_MARK_AD_POSTS}</Radio>
+                                </div>
+                            </FormLayout>
+                        }
                         <Cell asideContent={<Switch onClick={this.switch} defaultChecked={this.state.setting.btheme}
                                                     name={"btheme"} disabled={!this.state.premium}/>}>
                             {SETTING_PREMIUM_ON_BLACK_THEME}
                         </Cell>
-                        <Cell asideContent={<Switch onClick={this.switch} defaultChecked={this.state.setting.showadpost}
-                                                    name={"showadpost"} disabled={!this.state.premium}/>}>
-                            {SETTING_PREMIUM_ON_AD_POSTS}
+                        <Cell multiline={true}  asideContent={<Switch onClick={this.switch} defaultChecked={this.state.setting.doublesaved}
+                                                    name={"doublesaved"} disabled={!this.state.premium}/>}>
+                            {SETTING_PREMIUM_DUBLE_SAVE_BTN}
                         </Cell>
-                        <Cell
-                            asideContent={<Switch onClick={this.switch} defaultChecked={this.state.setting.hideadvpost}
-                                                  name={"hideadvpost"} disabled={!this.state.premium}/>}>
-                            {SETTING_PREMIUM_ON_HIED_AD_POSTS}
-                        </Cell>
+
                         {/*<FormLayout top={"TOP"}>*/}
                         {/*<div>*/}
                         {/*<Radio name="ui" onClick={this.upload_ui} value="vk" disabled={!this.state.premium}  defaultChecked={this.state.defaultCheckedVK}>VK UI</Radio>*/}
@@ -749,7 +798,7 @@ export default class Setting extends React.Component {
                 </Group>
                 <Group title={SETTING_INFO_DEBAG_TITLE}>
                     <FormLayout>
-                        <Textarea ref={this.dbRef} maxLength="400" onChange={this.stchange} value={this.state.bagreport}
+                        <Textarea ref={this.dbRef} maxLength="250" onChange={this.stchange} value={this.state.bagreport}
                                   name={"bagreport"} top={SETTING_INFO_DEBAG_TOP}/>
                         <Button align={"right"} onClick={this.bagreport}
                                 disabled={!this.state.bagreport || this.state.bagreport.length < 5}
@@ -769,16 +818,18 @@ export default class Setting extends React.Component {
             <Panel id={"gsettings"}>
                 <Group>
                     <PanelHeader>{SETTING_YOUR_ARE_GUEST}</PanelHeader>
-                    <ToastContainer/>
-                    <Div className={"noselect"}>{SETTING_YOUR_ARE_GUEST_TEXT}</Div>
+                    <FixedLayout vertical="top">
+                        <ToastContainer/>
+                    </FixedLayout>
+                    <Div >{SETTING_YOUR_ARE_GUEST_TEXT}</Div>
                     <CellButton level="primary" onClick={() => {
                         this.logout(true)
                     }}>{SETTING_YOUR_ARE_GUEST_ENTER}</CellButton>
                 </Group>
                 <Group title={SETTING_INFO_DEBAG_TITLE}>
                     <FormLayout>
-                        <Textarea onChange={this.stchange} className={"textarea"} value={this.state.bagreport}
-                                  name={"bagreport"} top={SETTING_INFO_DEBAG_TOP}/>
+                        <Textarea onChange={this.stchange} value={this.state.bagreport}
+                                  name={"bagreport"} maxLength="200" top={SETTING_INFO_DEBAG_TOP}/>
                         <Button align={"right"} onClick={this.bagreport}
                                 disabled={!this.state.bagreport || this.state.bagreport.length < 5}
                                 size={"l"}>{SETTING_INFO_DEBAG_BUTTON}</Button>
@@ -789,37 +840,35 @@ export default class Setting extends React.Component {
                 <PanelHeader left={<HeaderButton onClick={() => {
                     this.setState({actPanel: "set"})
                 }}><Icon24Back/></HeaderButton>}>{SETTING_GROUP_SETTING}</PanelHeader>
-                <ToastContainer/>
+                <FixedLayout vertical="top">
+                    <ToastContainer/>
+                </FixedLayout>
 
                 <Group title={SETTING_EDIT_GROUP_LIST}>
+                    <CellButton align={"center"} onClick={this.addGroup}>{SETTING_ADD_NEW_GROUP}</CellButton>
+                    {(this.state.groups && this.state.groups.length > 0) &&
+                    < List>
+                        {
+                            Array.prototype.map.call(this.state.groups, function (gr, i) {
+                                return (
+                                    <Cell key={i} onRemove={() => {
 
-                    {(this.state.groups && this.state.groups.length > 0) ?
-                        <List>
+                                        main.remove(gr.group_id);
+                                        main.uploadGL(true);
 
-                            <CellButton align={"center"} onClick={this.addGroup}>{SETTING_ADD_NEW_GROUP}</CellButton>
-                            {
-
-                                    Array.prototype.map.call(this.state.groups, function (gr, i) {
-                                        return (
-                                            <Cell key={i} onRemove={() => {
-
-                                                main.remove(gr.group_id);
-                                                main.uploadGL(true);
-
-                                            }} removable={true} removePlaceholder={"Удалить"}
-                                                  description={"@" + gr.username}
-                                                  before={<Avatar src={gr.icon}/>}>{gr.name}</Cell>
-                                        );
-                                    })
-                            }
-
-                        </List>
-                        :
-                        <CellButton align={"center"} onClick={this.addGroup}>{SETTING_ADD_FIRST_GROUP}</CellButton>
-
+                                    }} removable={true} removePlaceholder={"Удалить"}
+                                          description={"@" + gr.username}
+                                          before={<Avatar src={gr.icon}/>}>{gr.name}</Cell>
+                                );
+                            })
+                        }
+                    </List>
                     }
 
                 </Group>
+                {(this.state.groups && this.state.groups.length === 0) &&
+                <Footer>{"Список групп пуст"}</Footer>
+                }
             </Panel>
             <Panel id={"shoisegroup"}>
                 <PanelHeader noShadow={true}
@@ -828,9 +877,11 @@ export default class Setting extends React.Component {
                              }}><Icon24Back/></HeaderButton>}>
                     {SETTING_FIND_GROUP}
                 </PanelHeader>
-                <ToastContainer/>
+                <FixedLayout vertical="top">
+                    <ToastContainer/>
+                </FixedLayout>
 
-                <Search autoFocus={true} maxLength="15"
+                <Search autoFocus={true} maxLength="22"
                         after={SETTING_UPDATE_CANCLE} onChange={this.search}/>
 
                 {this.state.searchGrupList && this.state.searchGrupList.length > 0 &&
@@ -851,7 +902,7 @@ export default class Setting extends React.Component {
                 </Group>
                 }
                 {this.state.searchGrupList.length === 0 && this.state.searchlen > 0 &&
-                <Footer className={"noselect"}>Подходящих групп не найдено</Footer>
+                <Footer >Подходящих групп не найдено</Footer>
                 }
             </Panel>
 

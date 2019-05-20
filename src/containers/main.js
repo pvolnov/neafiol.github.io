@@ -41,7 +41,7 @@ import {WidgetRecordList,RecordList,RecordSavedList} from '../containers'
 import Cookies from "js-cookie";
 import { Provider as AlertProvider } from 'react-alert'
 import AlertTemplate from 'react-alert-template-basic'
-import {CONSTANT_USER, GUEST_HESH, SERVER_ERROR, WEB_HOST} from "../constants/config";
+import {CONSTANT_USER, GUEST_HESH, SERVER_ERROR, STATISTOC_HOST, WEB_HOST} from "../constants/config";
 import ErrorPage from "../components/ErrorPage";
 import OnePost from "../components/OnePost";
 import axios from "axios";
@@ -59,8 +59,10 @@ class AppT extends React.Component {
             activePanel: 'main',
             activeStory:"base",
             premium:false,
+            tabbar:true,
             error_page:false
         };
+
         this.onStoryChange = this.onStoryChange.bind(this);
         this.changePanel = this.changePanel.bind(this);
 
@@ -77,20 +79,59 @@ class AppT extends React.Component {
         catch (e) {
             this.params ={};
         }
-
-        console.log("user_id: ", this.params)
-
-
+        console.log("user_id: ", this.params);
     }
     componentWillMount() {
+        try {
+            this.setting = JSON.parse(Cookies.get("Setting"));
+        }
+        catch (e) {
+            this.setting={};
+        }
+        //Эти настройки обязательно должны быть
+        if(!this.setting.adstatus){
+            this.setting.adstatus={};
+            Cookies.set("Setting",this.setting)
+        }
+
+
+        if(CONSTANT_USER){
+            Cookies.set("hash", GUEST_HESH);
+            Cookies.set("auth", "ok");
+        }
+
+        if(Cookies.get('auth')!=='ok') {
+            this.setState({
+                tabbar:null,
+                activeStory:"auth"});
+        }
+
+        if(this.params.post ){
+            this.setState({
+                tabbar:null,
+                activeStory:"onepost"});
+        }
+        if(this.state.error_page){
+            this.setState({
+                tabbar:null,
+                activeStory:"epage"});
+        }
+
+    }
+
+    componentDidMount() {
         var main = this;
 
         axios.post(WEB_HOST + '/webinfo/', {
                 session: Cookies.get('hash'),
             },
         ).then((r)=> {
-                if (r.data.status == "sleep") {
-                    main.setState({error_page: true})
+                if (r.data.status === "sleep") {
+                    main.setState({error_page: true});
+                    axios.post(STATISTOC_HOST + "/bag_report/", {
+                        session: Cookies.get("hash"),
+                        bag_text: "Была попытка входа на спящий сервер"
+                    })
                 }
             }
         ).catch((e)=>{
@@ -98,40 +139,15 @@ class AppT extends React.Component {
                 main.setState({error_page: true})
             }
         });
-        if(CONSTANT_USER){
-            Cookies.set("hash", GUEST_HESH);
-            Cookies.set("auth", "ok");
-        }
-
-
-
-    }
-
-    componentDidMount() {
-        // localStorage.clear();
-
         //---------------INIT----------------------
-        try {
-            this.setting = JSON.parse(Cookies.get("Setting"));
-        }
-        catch (e) {
-            this.setting={}
-        }
+
         if(this.setting.btheme){
             document.body.setAttribute("scheme","client_dark");
         }
 
-        // if(this.setting['ui']==="tg"){
-        //     this.setState({activeStory:"wigetsrecord"})
-        // }
-        try {
-            // setTimeout(this.spesialproposal, 8000);
-        }
-        catch (e) {
-
-        }
         //--------------INIT--------------------
     }
+
 
     spesialproposal(){
         if(Cookies.get("Proposal")==null)
@@ -165,27 +181,9 @@ class AppT extends React.Component {
 
     onStoryChange(e) {
         if(this.state.activeStory===e.currentTarget.dataset.story){
-            if(this.scroll){
-                console.log("Anim")
-                return;
-            }
-
-            var main = this;
-            this.scroll = true;
             window.scrollTo({
                 top: 0,
-                behavior: "smooth"
             });
-            var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement ).scrollTop;
-            if(posTop>6000)
-            setTimeout(()=>{
-                window.scrollTo(0,0);
-                main.scroll=false;
-
-            },600)
-            else {
-                main.scroll=false;
-            }
         }
         else
         this.setState({activeStory: e.currentTarget.dataset.story})
@@ -196,18 +194,20 @@ class AppT extends React.Component {
     }
 
     render() {
-        var tabbar = (
+        var tabbar =
             <Tabbar>
                 <TabbarItem
                     onClick={this.onStoryChange}
                     selected={this.state.activeStory === 'saved'}
                     data-story="saved"
+                    // text="Сохранненые"
                 ><Icon28Saved/></TabbarItem>
 
                 <TabbarItem
                     onClick={this.onStoryChange}
                     selected={this.state.activeStory === 'base'}
                     data-story="base"
+                    // text="Лента"
                 ><Icon28Newsfeed/></TabbarItem>
 
                 {false &&
@@ -225,24 +225,13 @@ class AppT extends React.Component {
                     selected={this.state.activeStory === 'setting'}
                     data-story="setting"
                     label=""
+                    // text="Настройки"
                 ><Icon28Setting/></TabbarItem>
-            </Tabbar>
-        );
-        if(Cookies.get('auth')!='ok') {
-            tabbar = null;
-            this.state.activeStory = 'auth';
-        }
-        else {
-            Cookies.set("codewait", false);
-        }
-        if(this.params.post ){
-            this.state.activeStory = "onepost";
-            tabbar=null;
-        }
-        if(this.state.error_page){
-            this.state.activeStory = 'epage';
-            tabbar=null;
-        }
+            </Tabbar>;
+
+        if(this.state.activeStory==="auth" ||
+            this.state.activeStory==="onepost" || this.state.activeStory==="epage")
+            tabbar=false;
 
         return (
             <Epic activeStory={this.state.activeStory} tabbar={tabbar}>
@@ -251,8 +240,9 @@ class AppT extends React.Component {
                 <RecordSavedList store={this.store.saveds} dispatch={this.dispatch}  id={"saved"}/>
                 {false &&
                 <WidgetRecordList store={this.store.wrecord} dispatch={this.dispatch} id={"wigetsrecord"}/>}
+
                 <AuthForm id={"auth"} main={this}/>
-                <OnePost post_id={this.params.post} id={"onepost"}/>
+                <OnePost post_id={this.params.post} main={this} id={"onepost"}/>
                 <ErrorPage id={"epage"}/>
             </Epic>
         );

@@ -1,13 +1,29 @@
 .toast_android{
-  margin-top: 56px;
+  top: 54px;
+  position: fixed;
+  width: 100%;
 }
 .toast_iphone{
-  margin-top: 44px;
+  top: 44px;
+  position: fixed;
+  width: 100%;
+
+}
+.uploadbtn{
+  border: none;
+  outline: none;
+  background: none;
+  font-weight: revert;
+  color: var(--attach_picker_tab_active_background);;
 }
 
 .post_setting{
   padding: 10px;
   padding-right: 6px;
+}
+textarea{
+  resize: none;
+
 }
 .atoast{
   margin-top: 3px;
@@ -38,7 +54,7 @@
 .constant_text{
   color: var(--text_secondary);
 }
-.noselect,.Header__content ,div,body,textarea{
+.noselect,.Footer .Header, .Div ,.Header__content ,div,body,textarea{
   -webkit-touch-callout: none; /* iOS Safari */
   -webkit-user-select: none; /* Safari */
   -khtml-user-select: none; /* Konqueror HTML */
@@ -53,7 +69,7 @@
   -khtml-user-select: all; /* Konqueror HTML */
   -moz-user-select: all; /* Firefox */
   -ms-user-select: all; /* Internet Explorer/Edge */
-  user-select: all;
+  user-select: contain;
 }
 .textarea{
   maxLength:"240"

@@ -22,8 +22,8 @@ export default class ErrorPage extends React.Component {
                 {/*<ToastContainer autoClose={2000} />*/}
                 {/*<PanelHeader>Setting</PanelHeader>*/}
                 <Div><img className={"ephoto"} src={"https://pbs.twimg.com/media/DpnozJyXcAAIB0G.jpg"}></img></Div>
-                <Div className={"etext"}>На сервере ведутся технические работы.</Div>
-                <Div className={"etext2"} > Не волнуйтесь, наша обкаченная кофеином команда разработчиков скоро все починит.</Div>
+                <Div className={"etext noselect"}>На сервере ведутся технические работы.</Div>
+                <Div className={"etext2 noselect"} > Не волнуйтесь, наша обкаченная кофеином команда разработчиков скоро все починит.</Div>
 
             </Panel>
         </View>)

@@ -12,13 +12,14 @@ import {
     PullToRefresh,
     ScreenSpinner,
     Tooltip,
-    View
+    View, platform
 } from '@vkontakte/vkui';
 import Cookies from "js-cookie";
 import {HEAD_HOST, HOST, STATISTOC_HOST} from '../constants/config'
 import connect from '@vkontakte/vkui-connect';
 import {toast, ToastContainer} from "react-toastify";
 import {ping} from "../function";
+import {IOS} from "@vkontakte/vkui/src/lib/platform";
 
 
 export default class RecordList extends React.Component {
@@ -38,14 +39,14 @@ export default class RecordList extends React.Component {
             poput: null,
             fetching: false,
             isuploading: true,
-            toast:0,
-            offline:false,
+            toast: 0,
+            stopupload:false,
+            offline: false,
             fullphoto: {url: ""}
         };
 
         this.uploadnews = this.uploadnews.bind(this);
         this.getstatistic = this.getstatistic.bind(this);
-        this.checkend = this.checkend.bind(this);
         this.createRecords = this.createRecords.bind(this);
         this.showtoast = this.showtoast.bind(this);
         this.closeToast = this.closeToast.bind(this);
@@ -55,51 +56,73 @@ export default class RecordList extends React.Component {
         this.cond = {
             isnew: true
         };
-        this.stopupload=false;
 
     }
-    refresh(){
-        var main = this;
-        this.dispatch({"type":"CLEAR"});
-        this.setState({
-            menu:[],
-            fetching:true
-        });
-        setTimeout(()=>{
-            main.setState({
-                fetching:false
-            });
-        },1500);
-        this.uploadnews(-1);
-    }
 
-    componentWillMount() {
+    componentDidMount() {
+        console.log("RECORD LIST");
         if (this.store.list)
             if (this.store.list.length < 2) {
                 this.uploadnews(-1);
                 setTimeout(this.getstatistic, 2000, [], 0);
             } else {
-                setTimeout(this.getstatistic, 2000, [], 0);
                 this.setState({
-                    isuploading:false,
+                    isuploading: false,
                     menu: this.store.list
                 });
             }
-
-        //we can't sent too many data in our recuest:
-    }
-
-    componentDidMount() {
 
 
         var main = this;
         window.onscroll = () => {
             var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement).scrollTop;
             main.dispatch({type: 'SET_MAIN_Y', data: posTop});
-        };
 
+            if (document.documentElement.scrollHeight - posTop < 3000) {
+                if (!main.state.stopupload && !main.state.isuploading) {
+                    // console.log("UPLOAD ", this.state.menu.length, posTop);
+                    main.uploadnews(1);
+                }
+            }
+        };
+        this.baseOnpopstate(main);
+
+        window.history.pushState(null, null, window.location.pathname);
+        this.android = (platform() != IOS);
+        window.scrollTo(0, this.store.y);
+
+        if (Cookies.get("Setting") != null)
+            this.setting = JSON.parse(Cookies.get("Setting"));
+        else {
+            this.setting={};
+        }
+    }
+
+    refresh() {
+        // if (window.navigator.onLine) {
+        //     window.location.reload();
+        //     return;
+        // } else {
+        //     this.showtoast("Нет связи с сервером");
+        //     return;
+        // }
+        var main = this;
+        this.dispatch({"type": "CLEAR"});
+        this.setState({
+            menu: [],
+            fetching: true
+        });
+        setTimeout(() => {
+            main.setState({
+                fetching: false
+            });
+        }, 3500);
+        this.uploadnews(-1);
+    }
+
+    baseOnpopstate(main) {
         window.onpopstate = (e) => {
-            window.history.pushState({page: 1}, "main", "");
+            window.history.pushState(null, null, window.location.pathname);
             main.setState({
                 popout:
                     <Alert
@@ -114,7 +137,7 @@ export default class RecordList extends React.Component {
 
                             },
                             autoclose: true,
-                            style:"destructive"
+                            style: "destructive"
                         }]}
                         onClose={() => {
                             main.setState({popout: null});
@@ -124,22 +147,21 @@ export default class RecordList extends React.Component {
                         <p>Вы действительно хотите выйти?</p>
                     </Alert>
             });
+            return false;
 
 
         };
-        window.history.pushState({page: 1}, "main", "");
-        this.android = !['iPad', 'iPhone', 'iPod'].indexOf(navigator.platform) >= 0;
-        window.scrollTo(0, this.store.y );
     }
 
     closeToast() {
         this.state.toast -= 1;
     }
-    offline(){
-        if(this.state.offline){
+
+    offline() {
+        if (this.state.offline) {
             return;
         }
-        this.setState({offline:true});
+        this.setState({offline: true});
         // this.showtoast("Сервер не отвечает",toast.TYPE.ERROR);
     }
 
@@ -174,8 +196,6 @@ export default class RecordList extends React.Component {
             try {
                 if (elem.attributes['identy'] != null) {
                     let ident = elem.attributes['identy'].value;
-                    let ident_key = Number(elem.attributes['identy_key'].value);
-                    this.checkend(ident_key);
                     let type = elem.attributes['type'].value;
                     var isinmas = false;
                     for (var i = 0; i < mas.length; i++) {
@@ -226,25 +246,6 @@ export default class RecordList extends React.Component {
         setTimeout(this.getstatistic, delaytime, mas, n + 1);
     }
 
-    checkend(elem) {
-        if (!this.state.menu) return;
-        if (this.state.isuploading || this.state.menu.length < 5) {
-            return;
-        }
-
-        var i = 0;
-        var n = this.state.menu.length < 10 ? 6 : 9;
-        // console.log(elem);
-
-        if (elem > this.state.menu.length - n) {
-            if(this.stopupload)return;
-            console.log("UPLOAD ",this.state.menu.length,i);
-            this.uploadnews(1);
-        }
-
-
-    }
-
     //spesial request that get some recirds from server
     uploadnews(type = 0) {
 
@@ -259,7 +260,7 @@ export default class RecordList extends React.Component {
         // console.log("AUTAPLOAD ", type);
         this.setState({
             isuploading: true,
-            fetching:false
+            fetching: false
         });
 
 
@@ -275,10 +276,10 @@ export default class RecordList extends React.Component {
 
 
                 this.httpClient.post(HEAD_HOST + '/get/', {
-                            amount: count,
-                            type: type,
-                            post_now: post_now,
-                            session: Cookies.get('hash'),
+                        amount: count,
+                        type: type,
+                        post_now: post_now,
+                        session: Cookies.get('hash'),
                     }
                 ).then((res) => {
                     if (res.data["status"] === "_wrong_session") {
@@ -289,8 +290,10 @@ export default class RecordList extends React.Component {
                         return;
                     }
                     res = res.data;
-                    if(res['posts'].length<149){
-                        main.stopupload=true;
+                    if (res['posts'].length < 149) {
+                        main.setState({
+                            stopupload : true
+                        });
                     }
                     var new_posts = main.store.full_list;
                     new_posts = new_posts.concat(res['posts']);
@@ -298,7 +301,8 @@ export default class RecordList extends React.Component {
                     setTimeout(() => {
                         main.setState({
                             gloabaluploading: false,
-                            isuploading: false});
+                            isuploading: false
+                        });
                     }, 2000);
 
                     main.setState({
@@ -313,7 +317,7 @@ export default class RecordList extends React.Component {
                         fetching: false,
                         popout: null,
                         isuploading: false,
-                        gloabaluploading:false
+                        gloabaluploading: false
 
                     });
                     //end of uploading
@@ -365,10 +369,10 @@ export default class RecordList extends React.Component {
                 fetching: false
             });
             this.httpClient.post(HEAD_HOST + '/get/', {
-                        amount: 15,
-                        type: -1,
-                        post_now: 0,
-                        session: Cookies.get('hash')
+                    amount: 15,
+                    type: -1,
+                    post_now: 0,
+                    session: Cookies.get('hash')
                 }
             ).then((resp) => {
                 if (resp.data.status !== "ok") {
@@ -380,19 +384,19 @@ export default class RecordList extends React.Component {
                     fetching: false,
                     popout: null
                 });
-                if(resp.data.posts.length==0){
+                if (resp.data.posts.length == 0) {
                     main.setState({
-                        isuploading:false,
-                        gloabaluploading:false
+                        isuploading: false,
+                        gloabaluploading: false
                     })
                 }
                 main.dispatch({type: 'RECORDS_UPDATE', data: resp.data.posts.slice()});
             })
                 .catch((e) => {
-                main.setState({
-                    fetching: false,
-                    popout: null
-                });
+                    main.setState({
+                        fetching: false,
+                        popout: null
+                    });
                     main.offline();
 
                 })
@@ -417,16 +421,8 @@ export default class RecordList extends React.Component {
                             <Record
                                 parents={main}
                                 dispatch={main.dispatch}
-                                entities={item['entities']}
-                                text={item['text']}
-                                gname={item['group_title']}
-                                title={item['title']}
-                                imgs={item['images']}
-                                gava={item['gava']}
-                                pusturl={item['pusturl']}
-                                article={item['article']}
-                                time={item['time']}
-                                postid={item['post_id']}/>
+                                setting={this.setting}
+                                record={item}/>
                         </div>
                     );
             } catch (e) {
@@ -449,22 +445,22 @@ export default class RecordList extends React.Component {
                     </PullToRefresh>
 
 
-                    {this.state.offline?
-                        <Footer className={"noselect"}>Нет связи с сервером</Footer>:
+                    {this.state.offline ?
+                        <Footer >Нет связи с сервером</Footer> :
                         (this.state.isuploading || this.state.gloabaluploading) ?
 
                             (
                                 (!this.state.isuploading || this.state.menu && this.state.menu.length > 0) &&
-                                <Footer className={"noselect"}>Загрузка...</Footer>
+                                <Footer >Загрузка...</Footer>
                             )
 
                             :
                             (
 
                                 (this.state.menu && this.state.menu.length === 0) ?
-                                    <Footer className={"noselect"}>У Вас нет групп</Footer>
+                                    <Footer >У Вас нет групп</Footer>
                                     :
-                                    <Footer className={"noselect"}>Постов больше нет</Footer>
+                                    this.state.stopupload && <Footer >Постов больше нет</Footer>
                             )
 
 
@@ -473,8 +469,6 @@ export default class RecordList extends React.Component {
 
 
                 </Panel>
-
-
             </View>
         )
     }

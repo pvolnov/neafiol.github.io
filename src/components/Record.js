@@ -46,11 +46,22 @@ export default class Record extends React.Component {
 
         this.store = props.store;
         this.parents = props.parents;
+        this.setting = props.setting;
+
+        if (this.setting == null) {
+            this.setting = {}
+        }
+        if(!this.setting.adstatus){
+            this.setting.adstatus={};
+        }
+
+        var record = props.record;
+        console.log("RECORD",record);
 
 
         //-------decorate text---------------\\
-        var text = props.text || "";
-        var entities = props.entities;
+        var text = record.text || "";
+        var entities = record.entities;
         text = this.textprepare(text, entities);
 
         var stext = (text).substr(0, 500);
@@ -63,36 +74,33 @@ export default class Record extends React.Component {
         if (text.length > 500) {
             isfull = false;
         }
-        if (props.saved) {
-            this.state = props.state;
-            this.state.visible = true;
-            this.state.savemenu = true;
-        } else {
+        this.state = {
+            dislike: false,
+            like: false,
+            advertising: record.adv,
+            visible: true,
+            firstadvertising: true,
+            small: isfull,
+            onepost: props.onepost,
+            savemenu: props.saved,
+            isfull: isfull,
+            full: isfull,
+            text: isfull ? text : stext,
+            ftext: text,
+            stext: stext,
+            title: title,
+            imgs: record.images,
+            gname: record.group_title,
+            gava: record.gava,
+            postid: record.post_id,
+            pusturl: record.pusturl,
+            issaved: false,
+            tooltip: false,
+            article: record.article || {},
+            time: this.dataparse(this.props.time || "10:40:08 20.03.2018")
+        };
 
-            this.state = {
-                dislike: false,
-                like: false,
-                advertising: false,
-                visible: true,
-                firstadvertising:true,
-                small: isfull,
-                onepost: props.onepost,
-                isfull: isfull,
-                full: isfull,
-                text: isfull ? text : stext,
-                ftext: text,
-                stext: stext,
-                title: title,
-                imgs: props.imgs,
-                gname: props.gname,
-                gava: props.gava,
-                postid: props.postid,
-                pusturl: props.pusturl,
-                issaved: false,
-                article: props.article || {},
-                time: this.dataparse(this.props.time || "10:40:08 20.03.2018")
-            };
-        }
+
         this.fullrecord = this.fullrecord.bind(this);
         this.saveRecord = this.saveRecord.bind(this);
         this.setparam = this.setparam.bind(this);
@@ -111,18 +119,64 @@ export default class Record extends React.Component {
         }
 
 
-
     }
 
     componentWillMount() {
+        if (!this.setting.adblock) {
+            if (this.state.advertising === 1) {
+                this.state.advertising = 0;
+            }
+        }
+
+        var adv = this.state.advertising;
+        var advertising = localStorage.getItem("advertising");
+        if (advertising != "" && advertising != null) {
+            advertising = JSON.parse(advertising);
+
+            if (advertising.indexOf(this.state.postid) > -1) {
+                adv = 1;
+                this.setState({
+                    advertising: true,
+                    savedadvertising:true,
+                    firstadvertising: false,
+                });
+                if (this.state.savemenu) {
+                    this.parents.deletePost();
+                }
+            }
+        }
+        //not advertising
+        var unadvertising = localStorage.getItem("unadvertising");
+        if (unadvertising != "" && unadvertising != null) {
+            unadvertising = JSON.parse(unadvertising);
+            if (unadvertising.indexOf(this.state.postid) > -1) {
+                adv = 0;
+            }
+        }
+        //Действие
+
+
+        if (adv === 1 && !this.setting.adstatus.markadvpost) {
+            this.setState({visible: false});
+        }
+        else if(adv === 1 ) {
+            if (Cookies.get("new_rds") === "true") {
+                this.setState({tooltip: true});
+                Cookies.set("new_rds", false);
+            }
+        }
+
+
         var issave = false;
         var saved = localStorage.getItem("listsavedR");
-        if (saved === "") localStorage.setItem("listsavedR", "[]");
-        if (saved != "" && saved != null) {
+        if (saved !== "" && saved != null) {
             saved = JSON.parse(saved);
-            if (saved.indexOf(this.state.postid) != -1) {
+            if (saved.indexOf(this.state.postid) > -1) {
                 issave = true;
             }
+        }
+        else {
+            localStorage.setItem("listsavedR", "[]");
         }
         var like = false;
         var liked = localStorage.getItem("like");
@@ -141,23 +195,7 @@ export default class Record extends React.Component {
                 dislike = true;
             }
         }
-        var adv = false;
-        var advertising = localStorage.getItem("advertising");
 
-        if (advertising != "" && advertising != null) {
-            advertising = JSON.parse(advertising);
-            if (advertising.indexOf(this.state.postid) != -1) {
-                adv = true;
-                this.setState({advertising:true,
-                    firstadvertising:false,
-                    visible:false});
-                if (this.state.savemenu) {
-                    this.setState({
-                        visible: false});
-                    this.parents.deletePost();
-                }
-            }
-        }
 
         this.setState({
             issaved: issave,
@@ -167,11 +205,12 @@ export default class Record extends React.Component {
         })
     }
 
+
     dataparse(dstr) {
         if (typeof dstr != "string") return dstr;
         let dat = dstr.split(/[\.:\s]/);
         let month = ["Января", "Февраля", "Марта", "Апреля", "Мая", "Июня", "Июля", "Августа", "Сентября", "Октября", "Ноября", "Декабря"];
-        let d = [dat[3], " ", month[dat[4] - 1], ", ", dat[0], ":", dat[1]];
+        let d = [dat[3], " ", month[dat[4] - 1], " ", dat[0], ":", dat[1], ", ", dat[5], "",];
         return d
 
     }
@@ -182,7 +221,7 @@ export default class Record extends React.Component {
         if (!entities) {
             return text;
         }
-        // console.log(entities);
+
         let lastlet = text.length;
 
         for (var e of entities.slice().reverse()) {
@@ -196,28 +235,21 @@ export default class Record extends React.Component {
             var ls = text.substr(e['offset'] + e['length']);
 
 
-
             if (e['_'] === "MessageEntityTextUrl") {
                 ds = `<a  href="${e['url']}">${ds}</a>`;
-            }else
-            if (e['_'] === "MessageEntityUrl") {
+            } else if (e['_'] === "MessageEntityUrl") {
                 // console.log(ds);
                 ds = `<a class="url"  href="${ds}">${ds}</a>`;
-            }else
-            if (e['_'] === "MessageEntityMention") {
+            } else if (e['_'] === "MessageEntityMention") {
                 ds = ds.replace("@", "");
                 ds = `<a  href="https://t.me/${ds}">@${ds}</a>`;
-            }else
-            if (e['_'] === "MessageEntityBold") {
+            } else if (e['_'] === "MessageEntityBold") {
                 ds = `<strong>${ds}</strong>`;
-            }else
-            if (e['_'] === "MessageEntityItalic") {
+            } else if (e['_'] === "MessageEntityItalic") {
                 ds = `<em>${ds}</em>`;
-            }else
-            if (e['_'] === "MessageEntityHashtag") {
-                ds = `<span class="hashtag">${ds}</span>`;
-            }
-            else {
+            } else if (e['_'] === "MessageEntityHashtag") {
+                ds = `<span class="_hashtag">${ds}</span>`;
+            } else {
                 console.log(e['_'])
             }
             text = fs + ds + ls;
@@ -256,8 +288,11 @@ export default class Record extends React.Component {
     }
 
     sharePost(e) {
-        connect.send("VKWebAppShare", {"link": VK_APPS_URL + "#post=" + this.state.postid}).catch(() => {
-            console.log(e);
+        connect.send("VKWebAppShare", {"link": VK_APPS_URL + "#post=" + this.state.postid})
+            .catch(() => {
+                console.log(e);
+            }).then((r) => {
+            console.log("share:", r);
         });
 
     }
@@ -265,14 +300,12 @@ export default class Record extends React.Component {
     unsaveRecord(e) {
 
         var saved = JSON.parse(localStorage.getItem("listsavedR"));
-        var newsaved = [];
-        for (var i in saved) {
-            var s = saved[i];
-            if (s != this.state.postid) {
-                newsaved.unshift(s)
-            }
+        var index = saved.indexOf(this.state.postid);
+        if (index >= 0) {
+            saved.splice(index, 1);
         }
-        localStorage.setItem("listsavedR", JSON.stringify(newsaved));
+
+        localStorage.setItem("listsavedR", JSON.stringify(saved));
 
         var newsaved = [];
         if (localStorage.getItem("savedR") != "") {
@@ -280,7 +313,7 @@ export default class Record extends React.Component {
             var newsaved = [];
             for (var i in saved) {
                 var s = saved[i];
-                if (s.postid != this.state.postid) {
+                if (s.post_id != this.state.postid) {
                     newsaved.unshift(s)
                 }
             }
@@ -294,36 +327,33 @@ export default class Record extends React.Component {
     }
 
     saveRecord(e) {
-        var items = [];
-        this.setState({issaved: true});
-
         //list of saved records
         var saved = localStorage.getItem("listsavedR");
         if (saved != "" && saved != null) {
             saved = JSON.parse(saved);
-            saved.unshift(this.state.postid);
+            if(saved.indexOf(this.state.postid)<0)
+                saved.unshift(this.state.postid);
+            else
+                return;
             localStorage.setItem("listsavedR", JSON.stringify(saved))
+        } else {
+            localStorage.setItem("listsavedR", JSON.stringify([this.state.postid]))
         }
-        items = [];
-        var itm = {};
-        itm = (this.state);
-        items.push(itm);
+
+        var s =[];
         if (localStorage.getItem("savedR") !== "") {
-            var s = JSON.parse(localStorage.getItem("savedR"));
+            s = JSON.parse(localStorage.getItem("savedR"));
             if (Array.isArray(s)) {
-                items = items.concat(s);
+                s.unshift(this.props.record);
             }
         }
-        localStorage.setItem("savedR", JSON.stringify(items));
+        localStorage.setItem("savedR", JSON.stringify(s));
+
+        this.setState({issaved: true});
     }
 
     setparam(name) {
-        if (name === "advertising") {
-            if (this.state.savemenu) {
-                this.parents.deletePost();
-            }
-            this.setState({"visible": false})
-        }
+
         var items = [];
         if (localStorage.getItem(name) != "") {
             var s = JSON.parse(localStorage.getItem(name));
@@ -332,33 +362,45 @@ export default class Record extends React.Component {
             }
         }
         var par = {};
-        par[name] = true;
+        par[name] = 1;
         this.setState(par);
         items.unshift(this.state.postid);
         localStorage.setItem(name, JSON.stringify(items));
+
+        if (name === "advertising") {
+            this.unsetparam("unadvertising");
+            if (this.state.savemenu) {
+                this.parents.deletePost();
+            }
+            if(!this.setting.adstatus.markadvpost)
+                this.setState({"visible": false})
+        }
         this.ruport(name);
     }
 
     unsetparam(name) {
+        if(name=="advertising")
+            this.setparam("unadvertising");
+
+
         var mas = JSON.parse(localStorage.getItem(name));
-        var m = [];
-        for (var i in mas) {
-            var s = mas[i];
-            if (s != this.state.postid) {
-                m.unshift(s)
-            }
+        if (mas === null) {
+            mas = [];
+        }
+
+        var index = mas.indexOf(this.state.postid);
+        if (index >= 0) {
+            mas.splice(index, 1);
         }
         var par = {};
-
         par[name] = false;
         this.setState(par);
-        localStorage.setItem(name, JSON.stringify(m));
+        localStorage.setItem(name, JSON.stringify(mas));
         this.ruport("un" + name);
     }
 
     openSheet() {
         var main = this;
-        var saved = this.state.issaved;
 
         this.parents.setState({
                 popout:
@@ -369,13 +411,13 @@ export default class Record extends React.Component {
                     >
 
                         {
-                            !this.state.savemenu &&
+                            (!this.state.savemenu && this.state.advertising == 0) &&
                             <ActionSheetItem autoclose onClick={() => {
-                                main.setparam("advertising")
+                                main.setparam("advertising");
                             }} theme="destructive">Рекламный пост!</ActionSheetItem>
                         }
                         {
-                            saved ?
+                            (main.state.issaved || main.state.savemenu) ?
                                 <ActionSheetItem autoclose theme="destructive" onClick={main.unsaveRecord}>Удалить из
                                     сохраненных</ActionSheetItem> :
                                 <ActionSheetItem autoclose onClick={main.saveRecord}>Сохранить</ActionSheetItem>
@@ -389,6 +431,7 @@ export default class Record extends React.Component {
         )
 
     }
+
 
     render() {
 
@@ -407,21 +450,21 @@ export default class Record extends React.Component {
                                           <Icon24ShareOutline className={"passive_ico"}/>
                                       </Button>
                                       :
-                                      <Icon24MoreVertical onClick={this.openSheet}  className={"passive_ico post_setting"}/>
+                                      <Icon24MoreVertical onClick={this.openSheet} className={"passive_ico post_setting"}/>
                               }
                         >{this.state.gname}</Cell>
 
                         <Div>
                             {this.state.text.length > 0 &&
                             <p dangerouslySetInnerHTML={{__html: (this.state.text)}} onClick={this.fullrecord}
-                               className={"select "+ this.state.full ? "fulltextarea" : "textarea"}>
+                               className={ "select " + this.state.full ? "fulltextarea" : "textarea"}>
                             </p>
                             }
                         </Div>
 
 
                         {this.state.imgs.length > 0 && this.state.imgs[0] !== "" &&
-                        <ImageBlok imgs={this.state.imgs}/>
+                        <ImageBlok parents={this.parents} imgs={this.state.imgs}/>
                         }
 
                         {this.state.article.img && this.state.article['url'].indexOf("https://t.me/") == -1 && <Div>
@@ -434,7 +477,7 @@ export default class Record extends React.Component {
                                         <div class="articleSnippet_title">{this.state.article['title']}</div>
                                         <div class="articleSnippet_author">{this.state.gname}<span class=""></span></div>
                                         <a href={this.state.article['url']} className={"url"} target="_blank"
-                                            class="articleSnippet_button">ОТКРЫТЬ
+                                           class="articleSnippet_button">ОТКРЫТЬ
                                         </a>
                                     </div>
                                 </div>
@@ -459,14 +502,38 @@ export default class Record extends React.Component {
                                 </Button>
                         )
                         }
-                        {
-                            (this.state.advertising &&
-                            <Button level="tertiary" size="m" onClick={() => {
-                                this.unsetparam("advertising");
-                            }}>
-                                <Icon24MoneyCircle className={"passive_ico"}/>
-                            </Button>
+                        {!this.state.onepost && !this.state.savemenu && this.setting.doublesaved && (this.state.issaved ?
+                                <Button style={{float: "right"}} level="tertiary" size="m">
+                                    <Icon24Download className={"activ_ico"} onClick={this.unsaveRecord}/>
+                                </Button>
+                                :
+                                <Button className={"passive_ico"} style={{float: "right"}} level="tertiary" size="m">
+                                    <Icon24Download onClick={this.saveRecord}/>
+                                </Button>
                         )
+                        }
+                        {
+                            (this.state.advertising > 0 &&
+
+                                <Tooltip
+                                    text="Чтобы убрать у поста рекламную пометку, нажмите на этот значок"
+                                    // isShown={false}
+                                    isShown={this.state.tooltip}
+                                    onClose={() => this.setState({tooltip: false})}
+                                    offsetX={5} alignX={"right"} offsetY={0}
+                                >
+                                    <Button level="tertiary" disabled={this.state.advertising>1} style={{float: "right"}}
+                                            size="m" onClick={() => {
+                                            this.unsetparam("advertising");
+                                    }}>
+
+                                        <Icon24MoneyCircle
+                                            className={this.state.advertising == 1 ? "passive_ico" : "active_ico"}/>
+                                    </Button>
+                                </Tooltip>
+
+
+                            )
                         }
 
 
@@ -492,27 +559,25 @@ export default class Record extends React.Component {
                             <Icon24ShareOutline className={"passive_ico"}/>
                         </Button>}
 
-                        {/*{!this.state.onepost && !this.state.savemenu &&(this.state.issaved ?*/}
-                                {/*<Button style={{float: "right"}} level="tertiary" size="m">*/}
-                                    {/*<Icon24Download className={"activ_ico"} onClick={this.unsaveRecord}/>*/}
-                                {/*</Button>*/}
-                                {/*:*/}
-                                {/*<Button className={"passive_ico"} style={{float: "right"}} level="tertiary" size="m">*/}
-                                    {/*<Icon24Download onClick={this.saveRecord}/>*/}
-                                {/*</Button>*/}
-                        {/*)*/}
-                        {/*}*/}
+
 
                     </Group>
                     :
                     <React.Fragment>
-                        {!this.state.savemenu && this.state.firstadvertising &&
-                        <Group>
-                            <CellButton expandable={true} onClick={() => {
-                                // this.unsetparam("advertising");
-                                this.setState({"visible": true})
-                            }} align={"center"}>Скрыт рекламный пост. Показать?</CellButton>
-                        </Group>
+                        {
+                            //&& this.state.firstadvertising
+                            (!this.state.savemenu && !this.setting.adstatus.hideadvpost ) &&
+                            <Group>
+                                <CellButton expandable={true} onClick={() => {
+                                    if (Cookies.get("new_rds") === "true") {
+                                        this.setState({tooltip: true});
+                                        Cookies.set("new_rds", false);
+                                    }
+
+                                    // this.unsetparam("advertising");
+                                    this.setState({"visible": true})
+                                }} align={"center"}>Скрыт рекламный пост. Показать?</CellButton>
+                            </Group>
                         }
                     </React.Fragment>
 

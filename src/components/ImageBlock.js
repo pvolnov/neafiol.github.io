@@ -1,13 +1,13 @@
 import React from "react";
 import Gallery from "react-photo-gallery"
 import Lightbox from 'react-images';
-import ReactMediumImg from 'react-medium-zoom'
 import {Alert} from "./Setting";
 
 
 export class ImageBlok extends React.Component {
     constructor(props) {
         super(props);
+        this.parents=props.parents;
 
         var imges = [];
         var fm = false;
@@ -65,6 +65,13 @@ export class ImageBlok extends React.Component {
             currentImage: obj.index,
             lightboxIsOpen: true,
         });
+        var main = this;
+        window.onpopstate = (e) => {
+            window.history.pushState(null, null, window.location.pathname);
+            main.closeLightbox();
+            return true;
+
+        }
     }
 
     closeLightbox() {
@@ -72,6 +79,7 @@ export class ImageBlok extends React.Component {
             currentImage: 0,
             lightboxIsOpen: false,
         });
+        this.parents.baseOnpopstate(this.parents);
     }
 
     gotoPrevious() {
@@ -123,8 +131,8 @@ export class ImageBlok extends React.Component {
         return (
             <React.Fragment>
                 <React.Fragment>{this.state.fm && ((/\.mp4$/.test(this.state.fm.src)) ?
-                    <video preload={true} muted={true} src={this.state.fm.src} style={{"max-height":window.screen.height-100}}
-                           autoPlay={true} id="message_video" loop={true} playsinline={true} width="100%" >
+                    <video preload={"metadata"}   style={{"max-height":window.screen.height-100}}
+                           autoPlay={true} id="message_video" src={this.state.fm.src}  width="100%" >
                     </video>
                     :
                     this.state.fm && (<img onClick={this.showbigphoto}

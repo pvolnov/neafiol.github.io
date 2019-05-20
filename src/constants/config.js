@@ -4,9 +4,10 @@ export const HEAD_HOST = "https://teraldhead.herokuapp.com";
 export const STATISTOC_HOST = "https://telardstat.herokuapp.com";
 export const WEB_HOST = "https://telardstat.herokuapp.com";
 
-export const VK_APPS_URL = "https://vk.com/app6875702";
+export const VK_APPS_URL = "https://vk.com/terrald";
 
-export  const  VERSION ="1.0.1.18";
+export  const  VERSION ="1.2.1.2";
+
 export  const  GUEST_HESH ="rWFnVS45yc5e03VD";
 export  const  SERVER_ERROR =false;
 export  const  CONSTANT_USER =false;

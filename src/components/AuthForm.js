@@ -16,11 +16,13 @@ import {
     Link,
     List,
     Panel,
-    PanelHeader,
+    PanelHeader, platform,
     Progress,
     ScreenSpinner,
     Select,
     Spinner,
+    FixedLayout,
+    IOS,
     View
 } from "@vkontakte/vkui";
 import Icon24Back from '@vkontakte/icons/dist/24/back';
@@ -42,6 +44,9 @@ export default class AuthForm extends React.Component {
             errortext: null,
             errortitle: null,
             iser: false,
+            errortext2: null,
+            errortitle2: null,
+            iser2: false,
             actPanel: "telauth",
             id: props.id,
             code: "",
@@ -49,6 +54,7 @@ export default class AuthForm extends React.Component {
             consent: 0,
             phone: "+7",
             phoneprefix: "+7",
+            country:"ru",
             user_info: {},
             guest: true,
             tg_auth: false,
@@ -93,14 +99,14 @@ export default class AuthForm extends React.Component {
 
     componentDidMount() {
         var main = this;
-        main.usualcancle(main)
-        this.android = !['iPad', 'iPhone', 'iPod'].indexOf(navigator.platform) >= 0;
+        main.baseOnpopstate(main)
+        this.android =  (platform() != IOS);
     }
 
-    usualcancle(main) {
+    baseOnpopstate(main) {
 
         window.onpopstate = function (e) {
-            window.history.pushState({page: 2}, "auth", "");
+            window.history.pushState(null, null, window.location.pathname);
 
             if (main.state.actPanel != "telauth") {
                 main.setState({actPanel: "telauth"});
@@ -130,6 +136,7 @@ export default class AuthForm extends React.Component {
                         <p>Вы действительно хотите выйти?</p>
                     </Alert>
             });
+            return false;
 
         };
     }
@@ -221,7 +228,7 @@ export default class AuthForm extends React.Component {
                         main.setState({
                             popout: null,
                             actPanel: "verficode",
-                            iser: 0
+                            iser: 0,
                         });
                         Cookies.set("hash", res['session']);
                         Cookies.set("guest", false);
@@ -229,7 +236,7 @@ export default class AuthForm extends React.Component {
                     } else if (res['status'] === "valid") {
                         main.setState({
                             errortext: ALERT_AUTH_CANSEL_YOUR_SESSION,
-                            iser: 1,
+                            iser: true,
                             popout: null
 
                         });
@@ -243,16 +250,18 @@ export default class AuthForm extends React.Component {
                     } else {
                         main.setState({
                             errortext: res['status'],
-                            iser: 1,
+                            iser: true,
                             popout: null
 
                         });
                     }
                 })
                 .catch(function (error) {
-                    main.showtoast("Сервер не отвечает", toast.TYPE.ERROR);
                     main.setState({
+                        errortext: "Сервер не отвечает",
+                        iser: true,
                         popout: null
+
                     });
                 });
         }
@@ -267,6 +276,10 @@ export default class AuthForm extends React.Component {
                 this.setState({popout: null});
                 return;
             }
+            //Отключим кнопку назад.
+            window.onpopstate = function (e) {
+                window.history.pushState(null, null, window.location.pathname);
+            };
             this.httpClient.post(HEAD_HOST + '/auth/', {
                     page: 3,
                     settings: this.state.user_info
@@ -283,11 +296,11 @@ export default class AuthForm extends React.Component {
                         });
                         Cookies.set("hash", res['session']);
                         Cookies.set("ghash", res['session']);
-                        Cookies.set("auth", "ok");
+                        main.enter();
                         setTimeout(() => {
                                 main.props.main.setState({activeStory:"base"});
                             },
-                            1000);
+                            3000);
 
                     } else {
                         main.setState({
@@ -301,6 +314,8 @@ export default class AuthForm extends React.Component {
                     main.setState({
                         popout: null
                     });
+                    //Активируем кнопку назад
+                    main.baseOnpopstate(main)
             });
         }
         if (this.state.actPanel === "verficode") {
@@ -322,13 +337,14 @@ export default class AuthForm extends React.Component {
                     if (res['status'] === 'ok') {
                         main.setState({
                             popout: null,
-                            iser: 0
+                            iser: 0,
+                            iser2:0
                         });
                         main.showtoast("Началась синхронизация постов", toast.TYPE.INFO);
 
-                        Cookies.set("auth", "ok");
+                        main.enter();
                         Cookies.set("codewait", false);
-                        Cookies.set("new", "true");
+                        //info
                         Cookies.set("tg_auth", JSON.stringify({
                             hash: Cookies.get("hash"),
                             phone: main.state.phone
@@ -345,8 +361,10 @@ export default class AuthForm extends React.Component {
                     } else {
                         main.setState({
                             popout: null,
+                            errortext2:res['status'],
+                            iser2:true
                         });
-                        main.showtoast(res['status'], toast.TYPE.ERROR);
+                        // main.showtoast(res['status'], toast.TYPE.WARNING,4000);
                     }
 
                 }).catch(function (error) {
@@ -359,9 +377,17 @@ export default class AuthForm extends React.Component {
 
     }
 
-    logINasGues(e) {
+    enter(){
+        if(Cookies.get("new_rds")!=="false") {
+            Cookies.set("new_rds", "true");
+            Cookies.set("new_set", "true");
+        }
         Cookies.set("auth", "ok");
-        Cookies.set("new", "true");
+    }
+    logINasGues(e) {
+
+        this.enter();
+        this.state.user_info={};
         if (Cookies.get("ghash")) {
             Cookies.set("hash", Cookies.get("ghash"));
         } else {
@@ -371,7 +397,7 @@ export default class AuthForm extends React.Component {
     }
 
     logINoldAccount(e) {
-        Cookies.set("auth", "ok");
+        this.enter();
         Cookies.set("hash", this.state.tg_auth.hash);
 
         this.props.main.setState({activeStory:"base"});
@@ -415,8 +441,8 @@ export default class AuthForm extends React.Component {
                         {this.state.errortext}
                     </FormStatus>
                     }
-                    <FormLayoutGroup top="Выбирите страну">
-                        <Select defaultValue={"ru"} onChange={this.uploadcountry}>
+                    <FormLayoutGroup top="Выбирете страну">
+                        <Select defaultValue={this.state.country} onChange={this.uploadcountry}>
                             {
                                 COUNTRIES.map((country) => {
                                     return (
@@ -457,7 +483,9 @@ export default class AuthForm extends React.Component {
                 </Group>
             </Panel>
             <Panel id={"verficode"}>
+                <FixedLayout>
                 <ToastContainer/>
+                </FixedLayout>
                 <PanelHeader left={<HeaderButton onClick={() => {
                     this.setState({actPanel: "telauth"})
                 }}><Icon24Back/></HeaderButton>}>Ваш код</PanelHeader>
@@ -470,9 +498,9 @@ export default class AuthForm extends React.Component {
                 </Div>
                 }
                 <FormLayout>
-                    {(this.state.iser) &&
-                    <FormStatus title={this.state.errortitle} state="error">
-                        {this.state.errortext}
+                    {(this.state.iser2) &&
+                    <FormStatus title={this.state.errortitle2} state="error">
+                        {this.state.errortext2}
                     </FormStatus>
                     }
                     <FormLayoutGroup top="Введите код подтверждения из Telegram" bottom={ALERT_AUTH_TEXT}>
