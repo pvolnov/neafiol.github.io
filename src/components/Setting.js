@@ -68,7 +68,7 @@ import {
     SETTING_INFO_DEBAG_TOP,
     SETTING_INFO_TITLE,
     SETTING_LOGOUT, SETTING_NOONE_NEW_GROUP,
-    SETTING_PLASEHODER_NOT_FOUND, SETTING_PREMIUM_DUBLE_SAVE_BTN,
+    SETTING_PLASEHODER_NOT_FOUND, SETTING_PREMIUM_CLEVER_NEWS_LINE, SETTING_PREMIUM_DUBLE_SAVE_BTN,
     SETTING_PREMIUM_FUNCTIONAL,
     SETTING_PREMIUM_GET_PRIMIUM,
     SETTING_PREMIUM_GET_VIEW_STAT,
@@ -90,9 +90,12 @@ import axios from "axios";
 import {GUEST_HESH, HEAD_HOST, HOST, STATISTOC_HOST, VERSION} from "../constants/config";
 import Icon24Back from '@vkontakte/icons/dist/24/back';
 import connect from '@vkontakte/vkui-connect';
+import connect_promise from '@vkontakte/vkui-connect-promise';
+
 import {toast, ToastContainer} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "../css/setting.css"
+import {PathToJson} from "../function";
 
 
 export default class Setting extends React.Component {
@@ -122,18 +125,8 @@ export default class Setting extends React.Component {
             usersonline: Math.floor(Math.random() * 40) + 1,
             offline: false
         };
-        var params = window.location.search;
-        params = "{\"" +
-            params
-                .replace(/\?/gi, "")
-                .replace(/\&/gi, "\",\"")
-                .replace(/\=/gi, "\":\"") +
-            "\"}";
-        try {
-            this.params = JSON.parse(params);
-        } catch (e) {
-            this.params = {};
-        }
+
+        this.android = platform() == "android";
 
 
         this.logout = this.logout.bind(this);
@@ -158,8 +151,10 @@ export default class Setting extends React.Component {
         this.addNewGroup = this.addNewGroup.bind(this);
         this.copyHash = this.copyHash.bind(this);
         this.aboutAutorOpen = this.aboutAutorOpen.bind(this);
+        this.AddToFavorites = this.AddToFavorites.bind(this);
 
     }
+
 
     componentWillMount() {
         if (Cookies.get("hash") === GUEST_HESH) {
@@ -177,8 +172,8 @@ export default class Setting extends React.Component {
 
         try {
             this.setting = JSON.parse(Cookies.get("Setting"));
+            this.setting.user_info = PathToJson(window.location.search);
             this.state.setting = this.setting;
-            this.setting.vk_user_id = this.params["vk_user_id"];
             this.setState({premium: this.setting.premium});
             this.setState({btheme: this.setting.btheme});
         } catch (e) {
@@ -196,29 +191,10 @@ export default class Setting extends React.Component {
         } else {
             this.setState({defaultCheckedTG: true})
         }
-        window.onscroll = null;
-        var main = this;
-        axios.post(HEAD_HOST + "/user/", {
-            type: "get_groups",
-            session: Cookies.get("hash")
-        }).then((resp) => {
-            main.setState({groups: resp.data["groups"]})
-        }).catch((e) => {
-            console.log("gLIST", e);
-            main.offline();
-        });
-
-        axios.get(HOST + "/user/", {
-            params: {
-                type: "get_online_count",
-                session: Cookies.get("hash")
-            }
-        }).then((resp) => {
-            main.setState({online: resp.data.data})
-        });
 
         //------------INIT------------------------
     }
+
 
     componentDidMount() {
         console.log("SETTING AUTH");
@@ -231,13 +207,23 @@ export default class Setting extends React.Component {
         window.scrollTo(0, this.store.y);
 
         this.baseOnpopstate(this);
-        this.android = (platform() != IOS);
+
         let h = Math.floor((this.setting.timeinapp | 0) / 3600000);
         let m = Math.floor((this.setting.timeinapp | 0) % 3600000 / 60000);
         var time = (h > 0 ? (h + " час" + h > 1 && (h > 1 && h < 5 ? "а " : "ов ")) : "") + m + " минут" + ((m > 0 && m < 5) ? "ы" : "");
         this.setState({
             timeinapp: time
-        })
+        });
+
+        axios.post(HEAD_HOST + "/user/", {
+            type: "get_groups",
+            session: Cookies.get("hash")
+        }).then((resp) => {
+            main.setState({groups: resp.data["groups"]})
+        }).catch((e) => {
+            console.log("gLIST", e);
+            main.offline();
+        });
     }
 
 
@@ -251,9 +237,10 @@ export default class Setting extends React.Component {
         window.location.reload();
     }
 
+
     baseOnpopstate(main) {
         window.onpopstate = function (e) {
-            window.history.pushState(null, null, window.location.pathname);
+            window.history.pushState(null, null, window.location.href);
 
             if (main.state.actPanel != "set") {
 
@@ -295,6 +282,7 @@ export default class Setting extends React.Component {
         };
     }
 
+
     remove(group_id) {
         console.log(group_id);
         var newgL = [];
@@ -306,6 +294,7 @@ export default class Setting extends React.Component {
         this.state.groups = newgL;
         this.forceUpdate()
     }
+
 
     uploadGL(stay = true) {
         var main = this;
@@ -325,7 +314,8 @@ export default class Setting extends React.Component {
                     main.showtoast("Профиль обновлен", toast.TYPE.INFO, 3500);
                 }
             }
-        )
+        );
+        this.setState({searchGrupList:[]});
 
     }
 
@@ -360,6 +350,7 @@ export default class Setting extends React.Component {
         // this.showtoast("Сервер не отвечает",toast.TYPE.ERROR);
     }
 
+
     showtoast(text, type = toast.TYPE.INFO, time = 2500) {
 
         var ntoast = this.state.toast;
@@ -379,6 +370,7 @@ export default class Setting extends React.Component {
             className: this.android ? "toast_android" : "toast_iphone"
         });
     }
+
 
     bagreport(e) {
         if (!this.state.bagreport || this.state.bagreport === "") {
@@ -403,19 +395,23 @@ export default class Setting extends React.Component {
 
     }
 
+
     remakeaccount() {
         this.setState({actPanel: "groupList"});
         var main = this;
     }
 
+
     stchange(e) {
         this.setState({[e.target.name]: e.target.value});
     }
+
 
     change(e) {
         this.setting[e.target.name] = e.target.value;
         this.uloadsetting();
     }
+
 
     switch(e) {
         this.setting[e.target.name] = !(this.setting[e.target.name]);
@@ -424,6 +420,8 @@ export default class Setting extends React.Component {
         });
         this.uloadsetting();
     }
+
+
     setratio(e) {
         this.setting[e.target.name] = {};
         this.setting[e.target.name][e.target.value] =  true;
@@ -432,6 +430,7 @@ export default class Setting extends React.Component {
         });
         this.uloadsetting();
     }
+
 
     uloadsetting() {
         if (this.setting.btheme) {
@@ -451,20 +450,26 @@ export default class Setting extends React.Component {
         })
     }
 
+
     uloadgrouplist() {
-        this.showtoast("Обновление запущено", toast.TYPE.INFO, 2700);
+
         var main = this;
         axios.get(HOST + '/update/', {
-                session: Cookies.get("hash"),
-                type: "user"
+                params: {
+                    session: Cookies.get("hash"),
+                    type: "user"
+                }
             }
         ).then(
             () => {
-                main.setState({actPanel: "set"})
+                this.showtoast("Обновление запущено", toast.TYPE.INFO, 2700);
             }
-        )
+        ).catch(()=>{
+            this.showtoast("Сервер перегружен, попробуйте позжк ", toast.TYPE.WARNING, 2700);
+        })
         ;
     }
+
 
     logout(enter = false, delet = false) {
         if (enter) {
@@ -515,10 +520,12 @@ export default class Setting extends React.Component {
 
     }
 
+
     upload_ui(e) {
         this.setting['ui'] = e.target.value;
         this.uloadsetting();
     }
+
 
     getpremuim() {
         //make a post
@@ -547,11 +554,13 @@ export default class Setting extends React.Component {
         });
     }
 
+
     putpremium() {
         console.log("premium 2");
         var main = this;
 
         connect.send("VKWebAppGetAuthToken", {"app_id": 6875702, "scope": "stories"});
+
         connect.subscribe((e) => {
             console.log(e);
             if (e.detail.type === "VKWebAppAccessTokenReceived") {
@@ -580,6 +589,9 @@ export default class Setting extends React.Component {
                     upload_url: e.detail.data.response.upload_url,
                     session: Cookies.get("hash")
                 });
+
+                connect.send("VKWebAppJoinGroup", {"group_id": 180339032});
+                connect.send("VKWebAppAddToFavorites", {});
             } else if (e.detail.handler === "VKWebAppGetAuthToken") {
                 main.setState({popout: null});
                 main.showtoast("Получен премиум доступ", toast.TYPE.SUCCESS);
@@ -591,6 +603,7 @@ export default class Setting extends React.Component {
             }
         });
     }
+
 
     search(search) {
 
@@ -622,10 +635,12 @@ export default class Setting extends React.Component {
         );
     }
 
+
     addGroup() {
         console.log("shoisegroup");
         this.setState({actPanel: "shoisegroup"})
     }
+
 
     addNewGroup(gr) {
         if (this.state.groups.indexOf(gr) === -1) {
@@ -634,10 +649,12 @@ export default class Setting extends React.Component {
         }
         this.setState({
             searchGrupList: [],
+            searchlen:0,
             actPanel: "groupList"
         })
 
     }
+
 
     copy(text) {
         let tmp = document.createElement('INPUT'), // Создаём новый текстовой input
@@ -652,15 +669,36 @@ export default class Setting extends React.Component {
         focus.focus(); // Возвращаем фокус туда, где был
     }
 
+
     copyHash() {
         this.copy(Cookies.get("hash"));
         this.showtoast("Сессия скопирована");
     }
 
+
     aboutAutorOpen() {
         var main = this;
         this.setState({actPanel: "aboutauthor"});
     }
+
+
+    AddToFavorites(){
+        var main = this;
+        // main.setting.favorite = true;
+        // main.uloadsetting();
+        // main.forceUpdate();
+
+        connect_promise.send("VKWebAppAddToFavorites", {}).then((data)=>{
+            console.log("fconnect ",data);
+            main.setting.favorite = true;
+            main.uloadsetting();
+            main.forceUpdate();
+        }).catch((e)=>console.log(e));
+        console.log("Add to favorite")
+
+
+    }
+
 
     render() {
         var main = this;
@@ -669,7 +707,9 @@ export default class Setting extends React.Component {
             <Panel id="set" >
                 <PanelHeader>{SETTING_HEAD}</PanelHeader>
                 <FixedLayout vertical="top">
+                    <div>
                     <ToastContainer/>
+                    </div>
                 </FixedLayout>
 
                 <Tooltip offsetX={10} onClose={() => this.setState({tooltip: false})} isShown={this.state.tooltip}
@@ -702,13 +742,15 @@ export default class Setting extends React.Component {
                 <Tooltip offsetX={10} onClose={() => this.setState({tooltip2: false})} isShown={this.state.tooltip2}
                          text={TOOLTIP_PREMUIM}>
                     <Group title={"Premium"} description={this.state.premium && SETTING_PREMIUM_FUNCTIONAL}>
-                        <Cell For={"ch1"} asideContent={<Switch Id={"ch1"} onClick={this.switch}
-                                                                defaultChecked={this.state.setting.viewstat}
-                                                                name={"viewstat"} disabled={!this.state.premium}/>}>
+                        <Cell asideContent={<Switch  onClick={this.switch}
+                                 defaultChecked={this.state.setting.viewstat}
+                                        name={"viewstat"} disabled={!this.state.premium}/>} multiline>
+
+
                             {SETTING_PREMIUM_GET_VIEW_STAT}
                         </Cell>
                         <Cell asideContent={<Switch onClick={this.switch} defaultChecked={this.state.setting.adblock}
-                                                    name={"adblock"} disabled={!this.state.premium}/>}>
+                                                    name={"adblock"} disabled={!this.state.premium}/>} multiline>
                             {SETTING_PREMIUM_ON_ADBLOCK}
                         </Cell>
                         {
@@ -733,12 +775,17 @@ export default class Setting extends React.Component {
                             </FormLayout>
                         }
                         <Cell asideContent={<Switch onClick={this.switch} defaultChecked={this.state.setting.btheme}
-                                                    name={"btheme"} disabled={!this.state.premium}/>}>
+                                          multiline name={"btheme"} disabled={!this.state.premium}/>}>
                             {SETTING_PREMIUM_ON_BLACK_THEME}
                         </Cell>
-                        <Cell multiline={true}  asideContent={<Switch onClick={this.switch} defaultChecked={this.state.setting.doublesaved}
+                        <Cell multiline asideContent={<Switch onClick={this.switch} defaultChecked={this.state.setting.doublesaved}
                                                     name={"doublesaved"} disabled={!this.state.premium}/>}>
                             {SETTING_PREMIUM_DUBLE_SAVE_BTN}
+                        </Cell>
+                        <Cell multiline asideContent={<Switch onClick={this.switch} defaultChecked={this.state.setting.clevernewsline}
+                                                              name={"clevernewsline"} disabled={!this.state.premium}/>}
+                              description={'Вначале будут показаны наиболее интересные вам, не просмотренные ранее посты'}>
+                            {SETTING_PREMIUM_CLEVER_NEWS_LINE}
                         </Cell>
 
                         {/*<FormLayout top={"TOP"}>*/}
@@ -756,15 +803,16 @@ export default class Setting extends React.Component {
                         </Div>
                     </Group>
                 </Tooltip>
+
                 <Group title="Telegram">
                     {!this.state.guest &&
                     <CellButton onClick={this.uloadgrouplist}>{SETTING_UPLOAD_GROUP_LIST}</CellButton>}
                     {this.state.guest &&
                     <CellButton onClick={this.remakeaccount}>{SETTING_CHANGE_GROUP_LIST}</CellButton>}
-                    <CellButton expandable={true} level="danger" onClick={() => {
+                    <CellButton expandable="true" level="danger" onClick={() => {
                         this.logout()
                     }}>{SETTING_LOGOUT}</CellButton>
-                    {this.state.guest && <CellButton expandable={true} level="danger" onClick={() => {
+                    {this.state.guest && <CellButton expandable="true" level="danger" onClick={() => {
                         this.logout(false, true)
                     }}>{SETTING_DELETE_ACCOUNT}</CellButton>}
                 </Group>
@@ -781,8 +829,8 @@ export default class Setting extends React.Component {
                             </InfoRow>
                         </Cell>
                         <Cell>
-                            <InfoRow title="Пользователей онлайн">
-                                {this.state.usersonline}
+                            <InfoRow title="Количество групп">
+                                {this.state.groups && this.state.groups.length}
                             </InfoRow>
                         </Cell>
                         <Cell>
@@ -796,6 +844,7 @@ export default class Setting extends React.Component {
                     }} before={<Icon24About/>}>{SETTING_ABOUT_AUTOR}</Cell>
 
                 </Group>
+
                 <Group title={SETTING_INFO_DEBAG_TITLE}>
                     <FormLayout>
                         <Textarea ref={this.dbRef} maxLength="250" onChange={this.stchange} value={this.state.bagreport}
@@ -805,7 +854,14 @@ export default class Setting extends React.Component {
                                 size={"l"}>{SETTING_INFO_DEBAG_BUTTON}</Button>
                     </FormLayout>
                 </Group>
-
+                {!(this.setting.favorite) &&
+                    <Group>
+                        <Div>
+                            <Button onClick={this.AddToFavorites} level={"secondary"}
+                                    size={"xl"}>{"Добавить приложение в избранное"}</Button>
+                        </Div>
+                    </Group>
+                }
 
             </Panel>
             <Panel id={"aboutauthor"}>

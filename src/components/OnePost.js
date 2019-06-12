@@ -1,7 +1,7 @@
 import React from "react";
 import axios from "axios";
 
-import {Div, Panel, CellButton, View, Group, ScreenSpinner, PanelHeader} from "@vkontakte/vkui";
+import {Div, Footer,Panel, CellButton, View, Group, ScreenSpinner, PanelHeader} from "@vkontakte/vkui";
 import Record from "../components/Record";
 import {HEAD_HOST, HOST, STATISTOC_HOST, VK_APPS_URL} from '../constants/config'
 
@@ -55,7 +55,7 @@ export default class OnePost extends React.Component {
 
     render() {
         var item = this.state.item;
-        console.log(item);
+
         var main = this;
 
         return (<View popout={this.state.popout} id={this.state.id} activePanel={this.state.actPanel}>
@@ -64,14 +64,16 @@ export default class OnePost extends React.Component {
                 <PanelHeader>Terald</PanelHeader>
 
                 <div>
-                    {item &&
+                    {item ?
                     <Record
                         onepost={true}
-                        parents={main}
+                        parent={main}
                         record={item}/>
+                        :
+                        <Footer>Пост не найден</Footer>
                     }
                     {/*<Group>*/}
-                    <CellButton expandable={true} align={"center"} onClick={this.mainpage}>Открыть Terald</CellButton>
+                    <CellButton expandable="true" align={"center"} onClick={this.mainpage}>Открыть Terald</CellButton>
                     {/*</Group>*/}
                 </div>
 

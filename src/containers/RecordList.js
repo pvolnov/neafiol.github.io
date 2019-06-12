@@ -8,17 +8,22 @@ import {
     Group,
     Panel,
     Div,
+    FixedLayout,
     PanelHeader,
+    HeaderButton,
     PullToRefresh,
     ScreenSpinner,
     Tooltip,
     View, platform
 } from '@vkontakte/vkui';
+import { List, AutoSizer, CellMeasurer, CellMeasurerCache } from "react-virtualized";
+
 import Cookies from "js-cookie";
 import {HEAD_HOST, HOST, STATISTOC_HOST} from '../constants/config'
 import connect from '@vkontakte/vkui-connect';
 import {toast, ToastContainer} from "react-toastify";
-import {ping} from "../function";
+import Icon24Back from '@vkontakte/icons/dist/24/back';
+import Icon28ChevronBack from '@vkontakte/icons/dist/28/chevron_back';
 import {IOS} from "@vkontakte/vkui/src/lib/platform";
 
 
@@ -36,11 +41,13 @@ export default class RecordList extends React.Component {
             actPanel: "main",//active panel
             id: props.id,//view id
             menu: [],//list of our records
+            tmenu:[],
+            filter:"",
             poput: null,
             fetching: false,
             isuploading: true,
             toast: 0,
-            stopupload:false,
+            stopupload: false,
             offline: false,
             fullphoto: {url: ""}
         };
@@ -48,15 +55,46 @@ export default class RecordList extends React.Component {
         this.uploadnews = this.uploadnews.bind(this);
         this.getstatistic = this.getstatistic.bind(this);
         this.createRecords = this.createRecords.bind(this);
+        this.renderRow = this.renderRow.bind(this);
+        this.updatemarking = this.updatemarking.bind(this);
         this.showtoast = this.showtoast.bind(this);
         this.closeToast = this.closeToast.bind(this);
         this.refresh = this.refresh.bind(this);
         this.offline = this.offline.bind(this);
+        this.addfilter = this.addfilter.bind(this);
 
         this.cond = {
-            isnew: true
+            isnew: true,
+            allTpost:false
         };
+        this.cache = new CellMeasurerCache ({
+            fixedWidth: true,
+            defaultHeight: 100
+        });
+        this.listRef=[];
+        this.android = platform() == "android";
+    }
+    updatemarking() {
+        console.log("update");
+        // this.cache.clearAll();
+        // this._list.recomputeRowHeights();
+    }
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        // this.updatemarking();
+    }
 
+    componentWillMount() {
+        if (Cookies.get("Setting") != null)
+            this.setting = JSON.parse(Cookies.get("Setting"));
+        else {
+            this.setting = {};
+        }
+
+        var main = this;
+        setTimeout(() => {
+            window.scrollTo(0, main.store.y);
+            // main.listRef.current.scrollToItem(main.store.y);
+        }, 0);
     }
 
     componentDidMount() {
@@ -72,40 +110,33 @@ export default class RecordList extends React.Component {
                 });
             }
 
-
         var main = this;
+
         window.onscroll = () => {
+
             var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement).scrollTop;
             main.dispatch({type: 'SET_MAIN_Y', data: posTop});
 
             if (document.documentElement.scrollHeight - posTop < 3000) {
                 if (!main.state.stopupload && !main.state.isuploading) {
-                    // console.log("UPLOAD ", this.state.menu.length, posTop);
                     main.uploadnews(1);
                 }
             }
         };
         this.baseOnpopstate(main);
 
-        window.history.pushState(null, null, window.location.pathname);
-        this.android = (platform() != IOS);
-        window.scrollTo(0, this.store.y);
+        window.history.pushState(null, null, window.location.href);
 
-        if (Cookies.get("Setting") != null)
-            this.setting = JSON.parse(Cookies.get("Setting"));
-        else {
-            this.setting={};
-        }
     }
 
     refresh() {
-        // if (window.navigator.onLine) {
-        //     window.location.reload();
-        //     return;
-        // } else {
-        //     this.showtoast("Нет связи с сервером");
-        //     return;
-        // }
+        if (window.navigator.onLine) {
+            window.location.reload();
+            return;
+        } else {
+            this.showtoast("Нет связи с сервером");
+            return;
+        }
         var main = this;
         this.dispatch({"type": "CLEAR"});
         this.setState({
@@ -122,7 +153,7 @@ export default class RecordList extends React.Component {
 
     baseOnpopstate(main) {
         window.onpopstate = (e) => {
-            window.history.pushState(null, null, window.location.pathname);
+            window.history.pushState(null, null, window.location.href);
             main.setState({
                 popout:
                     <Alert
@@ -165,14 +196,13 @@ export default class RecordList extends React.Component {
         // this.showtoast("Сервер не отвечает",toast.TYPE.ERROR);
     }
 
-    showtoast(text, type, autoClose = 2000) {
+    showtoast(text, type = toast.TYPE.INFO, autoClose = 2000) {
         var closeToast = this.closeToast;
         var ntoast = this.state.toast;
         if (ntoast > 0) {
             return;
         }
         this.state.toast += 1;
-        console.log(this.state.toast);
         toast.info(text, {
             position: toast.POSITION.TOP_CENTER,
             type: type,
@@ -180,13 +210,13 @@ export default class RecordList extends React.Component {
             hideProgressBar: true,
             draggable: false,
             onClose: closeToast,
-            className: this.android ? "toast_android" : "toast_iphone",
+            className: (this.android ? "toast_android" : "toast_iphone"),
             autoClose: autoClose
         })
     }
 
     getstatistic(mas, n) {
-        let delaytime = 500;
+        let delaytime = 450;
         var centerX = document.documentElement.clientWidth / 2;
         var centerY = document.documentElement.clientHeight / 3;
 
@@ -196,7 +226,8 @@ export default class RecordList extends React.Component {
             try {
                 if (elem.attributes['identy'] != null) {
                     let ident = elem.attributes['identy'].value;
-                    let type = elem.attributes['type'].value;
+                    // let index = elem.attributes['index'].value;
+                    // this.dispatch({type:"SET_MAIN_Y",data:index});
                     var isinmas = false;
                     for (var i = 0; i < mas.length; i++) {
                         if (mas[i]['id'] === ident) {
@@ -206,7 +237,7 @@ export default class RecordList extends React.Component {
                         }
                     }
                     if (!isinmas)
-                        mas.push({'type': 'vkrecord', id: ident, posttype: type, time: delaytime});
+                        mas.push({'type': 'vkrecord', id: ident, posttype: "0", time: delaytime});
                     break;
                 }
             } catch (e) {
@@ -225,9 +256,12 @@ export default class RecordList extends React.Component {
             ).catch(() => {
                     //if we coudn't sent a recuest
                     mas = mas1;
+                    console.log("sent error");
                 }
-            );
-            console.log("sent stat");
+            ).then(() => {
+                console.log("sent stat");
+            });
+
             var setting = {};
             if (Cookies.get("Setting") != null)
                 setting = JSON.parse(Cookies.get("Setting"));
@@ -248,15 +282,66 @@ export default class RecordList extends React.Component {
 
     //spesial request that get some recirds from server
     uploadnews(type = 0) {
-
-        var count = 0;
-        var post_now = this.state.menu && this.state.menu.length;
-        var f15 = false;
-        if (type === -1) {
-            f15 = true;
-            type = 0;
-        }
         var main = this;
+        if(this.state.tematic){
+            if(this.cond.allTpost){
+                return;
+            }
+            var post_now = this.state.tmenu && this.state.menu.length;
+
+            this.httpClient.post(HEAD_HOST + '/get/', {
+                    amount:30,
+                    groupid:main.state.filter,//-12323431
+                    type: 4,
+                    post_now: post_now,//13
+                    session: Cookies.get('hash'),//cc97w6f8rtf6rgf97gr9ft9rf
+                }
+            ).then((res) => {
+                if (res.data["status"] === "_wrong_session") {
+                    Cookies.set("auth", "false");
+                    Cookies.set("hash", "");
+                    console.log("ERR");
+                    window.location.reload();
+                    return;
+                }
+                res = res.data;
+                if(res['posts'].length<1){
+                    main.cond.allTpost=true;
+                    return;
+                }
+
+                var new_posts = main.state.tmenu;
+                new_posts = new_posts.concat(res['posts']);
+                main.dispatch({type: 'UPDATE_RECORD_TEMATIC_LIST', data: new_posts.slice()});
+
+                main.setState({
+                    tmanu:new_posts
+                });
+
+            }).catch(function (error) {
+                console.log("Error");
+                main.offline();
+                main.setState({
+                    fetching: false,
+                    popout: null,
+                    isuploading: false,
+                    gloabaluploading: false
+
+                });
+                //end of uploading
+                // setTimeout(main.uploadnews,2000);
+                setTimeout(() => {
+                    main.setState({gloabaluploading: false});
+
+
+                }, 2000);
+            });
+            return;
+        }
+
+
+        var post_now = this.state.menu && this.state.menu.length;
+
         // console.log("AUTAPLOAD ", type);
         this.setState({
             isuploading: true,
@@ -270,14 +355,14 @@ export default class RecordList extends React.Component {
                     break;
                 }
 
-                count = 150;
+                var count = 150;
                 post_now = this.store.full_list && this.store.full_list.length;
                 main.setState({gloabaluploading: true});
 
 
                 this.httpClient.post(HEAD_HOST + '/get/', {
                         amount: count,
-                        type: type,
+                        type: 2,
                         post_now: post_now,
                         session: Cookies.get('hash'),
                     }
@@ -292,9 +377,10 @@ export default class RecordList extends React.Component {
                     res = res.data;
                     if (res['posts'].length < 149) {
                         main.setState({
-                            stopupload : true
+                            stopupload: true
                         });
                     }
+                    // console.log(res['posts']);
                     var new_posts = main.store.full_list;
                     new_posts = new_posts.concat(res['posts']);
                     main.dispatch({type: 'UPDATE_RECORD_LIST', data: new_posts.slice()});
@@ -331,8 +417,6 @@ export default class RecordList extends React.Component {
                 break;
             }
             case 1: {
-
-
                 setTimeout(() => {
                     main.setState({
                         isuploading: false
@@ -360,49 +444,79 @@ export default class RecordList extends React.Component {
                 });
                 break;
             }
-        }
+            case -1: {
 
-        if (f15) {
-
-            this.setState({
-                popout: <ScreenSpinner/>,
-                fetching: false
-            });
-            this.httpClient.post(HEAD_HOST + '/get/', {
-                    amount: 15,
-                    type: -1,
-                    post_now: 0,
-                    session: Cookies.get('hash')
-                }
-            ).then((resp) => {
-                if (resp.data.status !== "ok") {
-                    main.showtoast(resp.data.status, toast.TYPE.ERROR)
-                }
-                // console.log(resp.data.posts)
-                main.setState({
-                    menu: resp.data.posts,
-                    fetching: false,
-                    popout: null
+                this.setState({
+                    popout: <ScreenSpinner/>,
+                    fetching: false
                 });
-                if (resp.data.posts.length == 0) {
+                var ctype = this.setting.clevernewsline ? 0 : -1;
+                this.httpClient.post(HEAD_HOST + '/get/', {
+                        amount: 15,
+                        type: ctype,
+                        post_now: 0,
+                        session: Cookies.get('hash')
+                    }
+                ).then((resp) => {
+                    if (resp.data.status !== "ok") {
+                        main.showtoast(resp.data.status, toast.TYPE.ERROR)
+                    }
+                    // console.log(resp.data.posts)
                     main.setState({
-                        isuploading: false,
-                        gloabaluploading: false
-                    })
-                }
-                main.dispatch({type: 'RECORDS_UPDATE', data: resp.data.posts.slice()});
-            })
-                .catch((e) => {
-                    main.setState({
+                        menu: resp.data.posts,
                         fetching: false,
                         popout: null
                     });
-                    main.offline();
-
+                    if (resp.data.posts.length == 0) {
+                        main.setState({
+                            isuploading: false,
+                            gloabaluploading: false
+                        })
+                    }
+                    main.uploadnews();
+                    main.dispatch({type: 'RECORDS_UPDATE', data: resp.data.posts.slice()});
+                    main.dispatch({type: 'UPDATE_RECORD_LIST', data: resp.data.posts.slice()});
                 })
+                    .catch((e) => {
+                        main.setState({
+                            fetching: false,
+                            popout: null
+                        });
+                        main.offline();
+
+                    })
+            }
         }
 
 
+    }
+
+    addfilter(filter,gname){
+        filter = filter.split("__")[0];
+        console.log("filtler",filter);
+        var nlist=[];
+        for (var p in this.store.full_list){
+            let post = this.store.full_list[p];
+            if(post.post_id.split("__")[0]===filter){
+                nlist.push(post)
+            }
+        }
+
+        this.setState({
+            tmenu:nlist,
+            actPanel:"tematic",
+            gname:gname,
+            filter:filter
+        });
+        var main = this;
+        window.onpopstate = (e) => {
+            window.history.pushState(null, null, window.location.href);
+            main.setState({actPanel:"main"});
+            main.baseOnpopstate(main);
+        }
+    }
+    getRecordSize(index){
+            return 50;
     }
 
     createRecords = (menu) => {
@@ -416,14 +530,16 @@ export default class RecordList extends React.Component {
             try {
                 if (item)
                     rlist.push(
-                        <div key={i} role={"StatisticInfo"} identy_key={i} identy={item['post_id']}
-                             type={item['type'] || 0}>
+                        <div
+                            key={i}
+                            role={"StatisticInfo"}
+                            identy={item['post_id']}>
                             <Record
-                                parents={main}
+                                parent={main}
                                 dispatch={main.dispatch}
                                 setting={this.setting}
                                 record={item}/>
-                        </div>
+                        </div >
                     );
             } catch (e) {
                 console.log("Error write post")
@@ -431,42 +547,113 @@ export default class RecordList extends React.Component {
         }
         return rlist;
     };
+    renderRow({ index, key, style, parent }) {
+        // console.log(parent);
+        var item = this.state.menu[index];
+        var main = this;
+        var ref = React.createRef();
+        this.listRef.push(ref);
+
+        return (
+            <CellMeasurer
+                parent={parent}
+                cache={this.cache}
+                key={key}
+                rowIndex={index}
+                columnIndex={0}
+                role={"StatisticInfo"}
+                identy={item['post_id']}
+                >
+                <div
+                    style={style}
+                    index={index}
+                    role={"StatisticInfo"}
+                    identy={item['post_id']}>
+                <Record
+                    ref={this.ref}
+                    parent={main}
+                    dispatch={main.dispatch}
+                    setting={this.setting}
+                    record={item}/>
+                </div>
+            </CellMeasurer >
+        );
+    }
+    _setListRef = ref => {
+        console.log("REF");
+        this._list = ref;
+    };
+
 
     render() {
-
         return (
             <View id={this.state.id} popout={this.state.popout} activePanel={this.state.actPanel}>
                 <Panel id="main">
                     <PanelHeader>Новости</PanelHeader>
-                    <ToastContainer/>
+                    <FixedLayout>
+                        <div>
+                            <ToastContainer/>
+                        </div>
+                    </FixedLayout>
+                    {/*<AutoSizer>*/}
+                        {/*{*/}
+                            {/*({ width, height }) => {*/}
+                                {/*return <List*/}
+                                    {/*ref={this._setListRef}*/}
+                                    {/*width={width}*/}
+                                    {/*height={height}*/}
+                                    {/*deferredMeasurementCache={this.cache}*/}
+                                    {/*rowHeight={this.cache.rowHeight}*/}
+                                    {/*rowRenderer={this.renderRow}*/}
+                                    {/*rowCount={this.state.menu.length}*/}
+                                    {/*overscanRowCount={10} />*/}
+                            {/*}*/}
+                        {/*}*/}
+                    {/*</AutoSizer>*/}
+
                     <PullToRefresh onRefresh={this.refresh} isFetching={this.state.fetching}>
-                        {this.state.menu &&
-                        this.createRecords(this.state.menu)}
+                        <React.Fragment>
+                            {this.state.menu &&
+                            this.createRecords(this.state.menu)}
+                        </React.Fragment>
                     </PullToRefresh>
 
 
-                    {this.state.offline ?
-                        <Footer >Нет связи с сервером</Footer> :
+                    { this.state.offline ?
+                        <Footer>Нет связи с сервером</Footer> :
                         (this.state.isuploading || this.state.gloabaluploading) ?
 
                             (
                                 (!this.state.isuploading || this.state.menu && this.state.menu.length > 0) &&
-                                <Footer >Загрузка...</Footer>
+                                <Footer>Загрузка...</Footer>
                             )
 
                             :
                             (
 
                                 (this.state.menu && this.state.menu.length === 0) ?
-                                    <Footer >У Вас нет групп</Footer>
+                                    <Footer>У Вас нет групп</Footer>
                                     :
-                                    this.state.stopupload && <Footer >Постов больше нет</Footer>
+                                    this.state.stopupload && <Footer>Постов больше нет</Footer>
                             )
 
 
                     }
-                    <div/>
+                </Panel>
+                <Panel id="tematic">
+                    <PanelHeader
+                        left={<HeaderButton onClick={()=> this.setState({actPanel:"main"})}>
+                            {this.android ?<Icon24Back/>: <Icon28ChevronBack/>  }</HeaderButton>} >{this.state.gname}</PanelHeader>
+                    <FixedLayout>
+                        <div>
+                            <ToastContainer/>
+                        </div>
+                    </FixedLayout>
 
+                    <React.Fragment>
+                        {this.state.tmenu &&
+                        this.createRecords(this.state.tmenu)}
+                    </React.Fragment>
 
                 </Panel>
             </View>

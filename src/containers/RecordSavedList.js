@@ -35,6 +35,7 @@ export default class RecordSavedList extends React.Component {
 
         } catch (e) {
             var m = [];
+            console.log("Can't parse localstorage");
             localStorage.setItem("listsavedR", "[]");
             localStorage.setItem("savedR", "[]");
         }
@@ -48,22 +49,22 @@ export default class RecordSavedList extends React.Component {
             contextOpened: false
         };
         this.state.empty_nemu = this.state.menu && this.state.menu.length;
+        console.log("menu",this.state.menu);
 
         // this.clearAll();
         this.clearAll = this.clearAll.bind(this);
         this.deletePost = this.deletePost.bind(this);
         this.toggleContext = this.toggleContext.bind(this);
 
+        this.android = platform() == "android";
+
     }
     componentWillMount() {
-        if (Cookies.get("Setting") != null)
-            this.setting = JSON.parse(Cookies.get("Setting"));
-        else {
-            this.setting={};
-        }
+        this.setting = JSON.parse(Cookies.get("Setting"));
     }
     componentDidCatch(error, errorInfo) {
         localStorage.clear();
+        console.log("Error");
         window.location.reload();
     }
 
@@ -72,7 +73,7 @@ export default class RecordSavedList extends React.Component {
         window.scrollTo( 0, this.store.y  );
 
         window.onpopstate = function(e) {
-            window.history.pushState(null, null, window.location.pathname);
+            window.history.pushState(null, null, window.location.href);
             main.setState({
                 popout:
                     <Alert
@@ -104,7 +105,6 @@ export default class RecordSavedList extends React.Component {
             var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement).scrollTop;
             main.dispatch({type: 'SET_SAVED_Y', data: posTop});
         };
-        this.android =  (platform() != IOS);
 
     }
 
@@ -151,18 +151,11 @@ export default class RecordSavedList extends React.Component {
 
         for (let i in menu) {
             let item = menu[i];
-            //Create the parent and add the children
-            const FancyButton = React.forwardRef((props, ref) => (
-                <button ref={ref} className="FancyButton">
-                    {props.children}
-                </button>
-            ));
-
                 rlist.push(
                     <div key={i} role={"StatisticInfo"} identy={item['post_id']} type={item['type'] || 0}>
                         <Record
                             saved={true}
-                            parents={main}
+                            parent={main}
                             record={item}
                             setting={this.setting}
                         />
@@ -191,7 +184,7 @@ export default class RecordSavedList extends React.Component {
             <View id={this.state.id} popout={this.state.popout} activePanel={this.state.actPanel}>
                 <Panel id="savedlist">
                     <PanelHeader>
-                        <PanelHeaderContent aside={(this.state.empty_nemu > 0) && <Icon16Dropdown/>}
+                        <PanelHeaderContent disabled={this.state.empty_nemu < 1} aside={(this.state.empty_nemu > 0) && <Icon16Dropdown/>}
                                             onClick={this.toggleContext}>
                             Сохраненные посты
                         </PanelHeaderContent>

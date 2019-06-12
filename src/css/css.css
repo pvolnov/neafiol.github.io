@@ -7,7 +7,9 @@
   top: 44px;
   position: fixed;
   width: 100%;
-
+}
+.record{
+  /*height: 500px;*/
 }
 .uploadbtn{
   border: none;

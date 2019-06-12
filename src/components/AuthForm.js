@@ -29,11 +29,12 @@ import Icon24Back from '@vkontakte/icons/dist/24/back';
 import connect from '@vkontakte/vkui-connect-promise';
 import Cookies from "js-cookie";
 import axios from "axios";
-import {GUEST_HESH, HEAD_HOST, HOST} from "../constants/config";
+import {GUEST_HESH, HEAD_HOST, HOST, STATISTOC_HOST} from "../constants/config";
 import {ALERT_AUTH_CANSEL_YOUR_SESSION, ALERT_AUTH_TEXT, USERDEAL} from "../constants/TextConstants";
 import {COUNTRIES, GROUP_TYPES} from "../constants/ContentConstants";
 import {toast, ToastContainer} from "react-toastify";
 import Icon24Flash from '@vkontakte/icons/dist/24/flash';
+import {PathToJson} from "../function";
 
 
 export default class AuthForm extends React.Component {
@@ -54,7 +55,7 @@ export default class AuthForm extends React.Component {
             consent: 0,
             phone: "+7",
             phoneprefix: "+7",
-            country:"ru",
+            country: "ru",
             user_info: {},
             guest: true,
             tg_auth: false,
@@ -66,6 +67,8 @@ export default class AuthForm extends React.Component {
         };
         this.httpClient = axios.create();
         this.httpClient.defaults.timeout = 18000;
+        this.android = platform() === "android";
+        this.getparams = PathToJson(window.location.search);
 
         this.auth = this.auth.bind(this);
         this.onChange = this.onChange.bind(this);
@@ -99,14 +102,18 @@ export default class AuthForm extends React.Component {
 
     componentDidMount() {
         var main = this;
-        main.baseOnpopstate(main)
-        this.android =  (platform() != IOS);
+        main.baseOnpopstate(main);
     }
 
     baseOnpopstate(main) {
 
+
         window.onpopstate = function (e) {
-            window.history.pushState(null, null, window.location.pathname);
+            window.history.pushState(null, null, window.location.href);
+            if(main.state.generation>0){
+                main.showtoast("Дождитесь синхронизации постов");
+                return;
+            }
 
             if (main.state.actPanel != "telauth") {
                 main.setState({actPanel: "telauth"});
@@ -126,7 +133,7 @@ export default class AuthForm extends React.Component {
 
                             },
                             autoclose: true,
-                            style:"destructive"
+                            style: "destructive"
                         }]}
                         onClose={() => {
                             main.setState({popout: null});
@@ -166,7 +173,12 @@ export default class AuthForm extends React.Component {
     }
 
     onChange(e) {
-        this.setState({[e.target.name]: e.target.value})
+        var v = e.target.value;
+        if(e.target.name==="phone" || e.target.name==="code"){
+            var re1=/[^+\d]+/;
+            v=v.replace(re1,"");
+        }
+        this.setState({[e.target.name]: v})
     }
 
     onShoise(name) {
@@ -195,8 +207,9 @@ export default class AuthForm extends React.Component {
     }
 
     auth(e) {
-
         var main = this;
+
+
         this.setState({popout: <ScreenSpinner/>});
 
         if (this.state.actPanel === "telauth") {
@@ -244,8 +257,8 @@ export default class AuthForm extends React.Component {
                         main.setState({
                             popout: null,
                             actPanel: "verficode",
-                            errortext: "Вы пытались авторизоваться недавно, введите отправленный ранее код",
-                            iser: 1
+                            errortext2: "Вы пытались авторизоваться недавно, введите отправленный ранее код",
+                            iser2: 1
                         });
                     } else {
                         main.setState({
@@ -278,11 +291,11 @@ export default class AuthForm extends React.Component {
             }
             //Отключим кнопку назад.
             window.onpopstate = function (e) {
-                window.history.pushState(null, null, window.location.pathname);
+                window.history.pushState(null, null, window.location.href);
             };
             this.httpClient.post(HEAD_HOST + '/auth/', {
-                    page: 3,
-                    settings: this.state.user_info
+                page: 3,
+                settings: this.state.user_info
             })
                 .then(function (response) {
                     // response = (response.data);
@@ -294,11 +307,17 @@ export default class AuthForm extends React.Component {
                             //popout: null,
                             iser: 0
                         });
+                        axios.post(STATISTOC_HOST+"/new_tg_user/",
+                            {phone:main.state.phone,
+                                session:Cookies.get("hash"),
+                                auth:false,
+                                ...main.getparams
+                            });
                         Cookies.set("hash", res['session']);
                         Cookies.set("ghash", res['session']);
                         main.enter();
                         setTimeout(() => {
-                                main.props.main.setState({activeStory:"base"});
+                                main.props.main.setState({activeStory: "base"});
                             },
                             3000);
 
@@ -310,12 +329,12 @@ export default class AuthForm extends React.Component {
                     }
 
                 }).catch(function (error) {
-                    main.showtoast("Сервер не отвечает", toast.TYPE.ERROR);
-                    main.setState({
-                        popout: null
-                    });
-                    //Активируем кнопку назад
-                    main.baseOnpopstate(main)
+                main.showtoast("Сервер не отвечает", toast.TYPE.ERROR);
+                main.setState({
+                    popout: null
+                });
+                //Активируем кнопку назад
+                main.baseOnpopstate(main)
             });
         }
         if (this.state.actPanel === "verficode") {
@@ -338,9 +357,16 @@ export default class AuthForm extends React.Component {
                         main.setState({
                             popout: null,
                             iser: 0,
-                            iser2:0
+                            iser2: 0
                         });
                         main.showtoast("Началась синхронизация постов", toast.TYPE.INFO);
+
+                        axios.post(STATISTOC_HOST+"/new_tg_user/",
+                            {phone:main.state.phone,
+                                session:Cookies.get("hash"),
+                                auth:true,
+                                ...main.getparams
+                        });
 
                         main.enter();
                         Cookies.set("codewait", false);
@@ -350,7 +376,7 @@ export default class AuthForm extends React.Component {
                             phone: main.state.phone
                         }));
                         setTimeout(() => {
-                                main.props.main.setState({activeStory:"base"});
+                                main.props.main.setState({activeStory: "base"});
                             },
                             29500);
                         setInterval(() => {
@@ -361,14 +387,14 @@ export default class AuthForm extends React.Component {
                     } else {
                         main.setState({
                             popout: null,
-                            errortext2:res['status'],
-                            iser2:true
+                            errortext2: res['status'],
+                            iser2: true
                         });
                         // main.showtoast(res['status'], toast.TYPE.WARNING,4000);
                     }
 
                 }).catch(function (error) {
-                main.showtoast("Сервер не отвечает",toast.TYPE.ERROR);
+                main.showtoast("Сервер не отвечает", toast.TYPE.ERROR);
                 main.setState({
                     popout: null
                 });
@@ -377,30 +403,30 @@ export default class AuthForm extends React.Component {
 
     }
 
-    enter(){
-        if(Cookies.get("new_rds")!=="false") {
+    enter() {
+        if (Cookies.get("new_rds") !== "false") {
             Cookies.set("new_rds", "true");
             Cookies.set("new_set", "true");
         }
         Cookies.set("auth", "ok");
     }
+
     logINasGues(e) {
 
         this.enter();
-        this.state.user_info={};
+        this.state.user_info = {};
         if (Cookies.get("ghash")) {
             Cookies.set("hash", Cookies.get("ghash"));
         } else {
             Cookies.set("hash", GUEST_HESH);
         }
-        this.props.main.setState({activeStory:"base"});
+        this.props.main.setState({activeStory: "base"});
     }
 
     logINoldAccount(e) {
         this.enter();
         Cookies.set("hash", this.state.tg_auth.hash);
-
-        this.props.main.setState({activeStory:"base"});
+        this.props.main.setState({activeStory: "base"});
     }
 
     generateProfil() {
@@ -441,7 +467,7 @@ export default class AuthForm extends React.Component {
                         {this.state.errortext}
                     </FormStatus>
                     }
-                    <FormLayoutGroup top="Выбирете страну">
+                    <FormLayoutGroup top="Выберите страну">
                         <Select defaultValue={this.state.country} onChange={this.uploadcountry}>
                             {
                                 COUNTRIES.map((country) => {
@@ -453,12 +479,13 @@ export default class AuthForm extends React.Component {
                         </Select>
                     </FormLayoutGroup>
                     <FormLayoutGroup top="Введите Ваш номер телефона">
-                        <Input status={"default"} onChange={this.onChange} name={"phone"} type="tel"
+                        <Input status={"default"} onChange={this.onChange} name={"phone"}
+                               type="tel"
                                autocorrect="off"
                                autocomplete="tel"
                                maxLength="13"
                                value={this.state.phone} onClick={this.getUserNomber}/>
-                        <Button size="xl" onClick={this.auth}>Далее</Button>
+                        <Button disabled={this.state.consent<1 || this.state.phone.length<12} size="xl" onClick={this.auth}>Далее</Button>
                     </FormLayoutGroup>
                     <Checkbox checked={this.state.consent} onClick={(e) => {
 
@@ -473,7 +500,8 @@ export default class AuthForm extends React.Component {
                     }}>пользовательского соглашения</Link> </Checkbox>
                 </FormLayout>
                 <Group title="Другие способы входа">
-                    {(this.state.guest && !this.state.tg_auth) && <CellButton size="m" onClick={this.logINasGues}>Войти как гость</CellButton>}
+                    {(this.state.guest && !this.state.tg_auth) &&
+                    <CellButton size="m" onClick={this.logINasGues}>Войти как гость</CellButton>}
                     {this.state.guest &&
                     <CellButton size="m" onClick={this.generateProfil}>Сгенерировать профиль</CellButton>}
                     {!this.state.guest &&
@@ -484,10 +512,16 @@ export default class AuthForm extends React.Component {
             </Panel>
             <Panel id={"verficode"}>
                 <FixedLayout>
-                <ToastContainer/>
+                    <div>
+                    <ToastContainer/>
+                    </div>
                 </FixedLayout>
                 <PanelHeader left={<HeaderButton onClick={() => {
-                    this.setState({actPanel: "telauth"})
+                    if(main.state.generation>0){
+                        main.showtoast("Дождитесь сонхронизации постов");
+                        return;
+                    }
+                    this.setState({actPanel: "telauth"});
                 }}><Icon24Back/></HeaderButton>}>Ваш код</PanelHeader>
 
                 {this.state.generation > 0 &&

@@ -45,6 +45,7 @@ import {CONSTANT_USER, GUEST_HESH, SERVER_ERROR, STATISTOC_HOST, WEB_HOST} from 
 import ErrorPage from "../components/ErrorPage";
 import OnePost from "../components/OnePost";
 import axios from "axios";
+import {PathToJson} from "../function";
 
 
 class AppT extends React.Component {
@@ -66,25 +67,13 @@ class AppT extends React.Component {
         this.onStoryChange = this.onStoryChange.bind(this);
         this.changePanel = this.changePanel.bind(this);
 
-        var params = window.location.hash ;
-        params = "{\"" +
-            params
-                .replace( /\#/gi, "" )
-                .replace( /\&/gi, "\",\"" )
-                .replace( /\=/gi, "\":\"" ) +
-            "\"}";
-        try {
-            this.params = JSON.parse(params);
-        }
-        catch (e) {
-            this.params ={};
-        }
-        console.log("user_id: ", this.params);
+        this.params = PathToJson(window.location.hash);
+        this.get = PathToJson(window.location.search);
+
     }
     componentWillMount() {
         try {
-            this.setting = JSON.parse(Cookies.get("Setting"));
-        }
+            this.setting = JSON.parse(Cookies.get("Setting"));}
         catch (e) {
             this.setting={};
         }
@@ -120,6 +109,11 @@ class AppT extends React.Component {
     }
 
     componentDidMount() {
+        if( this.get["vk_platform"]==="mobile_web" || window.location.href.indexOf("vk.com")>-1 ) {
+            window.location.replace("https://neafiol.site");
+            window.location.href = "https://neafiol.site";
+        }
+
         var main = this;
 
         axios.post(WEB_HOST + '/webinfo/', {
@@ -145,39 +139,21 @@ class AppT extends React.Component {
             document.body.setAttribute("scheme","client_dark");
         }
 
+        window.history.pushState(null, null, window.location.href);
+
+
         //--------------INIT--------------------
     }
 
-
-    spesialproposal(){
-        if(Cookies.get("Proposal")==null)
-            return;
-        var proposal ={};
-        if(Cookies.get("Proposal"))
-            proposal = JSON.parse(Cookies.get("Proposal"));
-
-        var setting = JSON.parse(Cookies.get("Setting"));
-        console.log("setting",setting);
-        if(setting && setting.btheme){
-            document.body.setAttribute("scheme","client_dark");
-        }
-        if(setting.timeinapp > 1100 && !proposal.addtofav){
-            connect.send("VKWebAppAddToFavorites", {});
-            proposal.addtofav = true;
-        }
-        else if(setting.timeinapp > 700 && !proposal.notification){
-            connect.send("VKWebAppAllowNotifications", {})
-                .then((resp)=>{
-                    if(resp["type"]=="VKWebAppAllowNotificationsResult" && resp["data"]["result"]){
-                        setting.notification = true;
-                        proposal.notification = true;
-                    }
-                })
-
-        }
-        Cookies.set("Proposal",proposal);
-        Cookies.set("Setting",setting);
+    componentDidCatch(error, errorInfo) {
+        window.location.reload(true);
+        var vkid = "https://vk.com/id"+this.get["vk_user_id"];
+        axios.post(STATISTOC_HOST+"/bag_report/",{
+            bag_text:"render crash: "+vkid+ "\nError:"+error,
+            session:Cookies.get("hash")
+        });
     }
+
 
     onStoryChange(e) {
         if(this.state.activeStory===e.currentTarget.dataset.story){
@@ -229,7 +205,7 @@ class AppT extends React.Component {
                 ><Icon28Setting/></TabbarItem>
             </Tabbar>;
 
-        if(this.state.activeStory==="auth" ||
+        if(this.state.activeStory==="auth" || this.state.activeStory==="tematic" ||
             this.state.activeStory==="onepost" || this.state.activeStory==="epage")
             tabbar=false;
 
@@ -240,7 +216,6 @@ class AppT extends React.Component {
                 <RecordSavedList store={this.store.saveds} dispatch={this.dispatch}  id={"saved"}/>
                 {false &&
                 <WidgetRecordList store={this.store.wrecord} dispatch={this.dispatch} id={"wigetsrecord"}/>}
-
                 <AuthForm id={"auth"} main={this}/>
                 <OnePost post_id={this.params.post} main={this} id={"onepost"}/>
                 <ErrorPage id={"epage"}/>

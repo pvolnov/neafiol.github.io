@@ -1106,12 +1106,6 @@ a.tgme_widget_message_contact_wrap:hover {
   color: #212121;
   margin-top: 4px;
   margin-bottom: 1px;
-  /*display: -webkit-box;
-  max-height: 85px;
-  -webkit-line-clamp: 5;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;*/
 }
 .tgme_widget_message_game {
   margin: 6px 0;

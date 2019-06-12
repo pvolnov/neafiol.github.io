@@ -16,10 +16,11 @@ export const SETTING_PREMIUM_FUNCTIONAL = "Дополнительный функ
 export const SETTING_PREMIUM_GET_VIEW_STAT = "Собирать статистику просмотров";
 export const SETTING_PREMIUM_ON_ADBLOCK = "Включить AdBlock";
 export const SETTING_PREMIUM_ON_BLACK_THEME = "Включить темную тему";
-export const SETTING_PREMIUM_DUBLE_SAVE_BTN = "Дублировать кнопку сохранить под постом.";
+export const SETTING_PREMIUM_DUBLE_SAVE_BTN = "Дублировать кнопку сохранить под постом";
 export const SETTING_PREMIUM_ON_HIED_AD_POSTS = "Не показывать рекламные посты";
 export const SETTING_PREMIUM_WRAP_AD_POSTS = "Сворачивать рекламные посты";
 export const SETTING_PREMIUM_MARK_AD_POSTS = "Помечать рекламные посты";
+export const SETTING_PREMIUM_CLEVER_NEWS_LINE = 'Собирать перосонльную ленту';
 export const SETTING_PREMIUM_GET_PRIMIUM= "Получить премиум [бесплатно]";
 
 export const SETTING_UPLOAD_GROUP_LIST = "Обновить список групп";
@@ -51,7 +52,7 @@ export const ALERT_NOT_CONNECT_TITLE = "У нас плохие новости :(
 export const ALERT_NOT_CONNECT_TEXT = "Мы не можем связаться с серверами Telegram. Для корректного отображения Ваших" +
     "                                    фото перейдите в стандартное меню просмотра или включите proxy-server или смените" +
     "                                    страну";
-export  const ALERT_AUTH_TEXT = " ** После авторизации необходимо подождать окончание синхронизации постов";
+export  const ALERT_AUTH_TEXT = " ** После авторизации необходимо дождаться окончания синхронизации постов";
 export const ALERT_AUTH_CANSEL_YOUR_SESSION ="Отмените текущую сессию в Telegram:" +
     "!(Telegram ➙ настройки ➙ Конфиденциальность ➙ Активные сеансы ➙ Telind ➙ \"Завершить сеанс\")";
 export const ALERT_AUTH_CODE_OWERTIME = "Код авторизации просрочен";

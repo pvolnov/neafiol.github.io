@@ -7,7 +7,7 @@ import {Alert} from "./Setting";
 export class ImageBlok extends React.Component {
     constructor(props) {
         super(props);
-        this.parents=props.parents;
+        this.parent=props.parent;
 
         var imges = [];
         var fm = false;
@@ -35,6 +35,8 @@ export class ImageBlok extends React.Component {
             var img = new Image();
             img.onload = () => {
                 main.forceUpdate();
+                console.log("load");
+                // main.parent.updatemarking();
             };
             img.src = imges[im];
             images.push(img);
@@ -67,7 +69,7 @@ export class ImageBlok extends React.Component {
         });
         var main = this;
         window.onpopstate = (e) => {
-            window.history.pushState(null, null, window.location.pathname);
+            window.history.pushState(null, null, window.location.href);
             main.closeLightbox();
             return true;
 
@@ -79,7 +81,7 @@ export class ImageBlok extends React.Component {
             currentImage: 0,
             lightboxIsOpen: false,
         });
-        this.parents.baseOnpopstate(this.parents);
+        this.parent.baseOnpopstate(this.parent);
     }
 
     gotoPrevious() {
@@ -104,6 +106,7 @@ export class ImageBlok extends React.Component {
             e.target.className = e.target.className.replace("showfullphoto", "");
             this.setState({fullnow: false});
         }
+        this.parent.forceUpdate();
 
     }
     showall(e){
@@ -131,7 +134,7 @@ export class ImageBlok extends React.Component {
         return (
             <React.Fragment>
                 <React.Fragment>{this.state.fm && ((/\.mp4$/.test(this.state.fm.src)) ?
-                    <video preload={"metadata"}   style={{"max-height":window.screen.height-100}}
+                    <video preload={"metadata"}   style={{"maxHeight":window.screen.height-100}}
                            autoPlay={true} id="message_video" src={this.state.fm.src}  width="100%" >
                     </video>
                     :

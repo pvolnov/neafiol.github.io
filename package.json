@@ -36,6 +36,7 @@
     "react-photo-gallery": "^6.3.2",
     "react-redux": "^6.0.1",
     "react-toastify": "^5.0.0-rc.5",
+    "react-virtualized": "^9.21.1",
     "redux": "^4.0.1",
     "redux-devtools": "^3.5.0",
     "redux-thunk": "^2.3.0"

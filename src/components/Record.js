@@ -45,19 +45,17 @@ export default class Record extends React.Component {
         this.osname = platform();
 
         this.store = props.store;
-        this.parents = props.parents;
+        this.parent = props.parent;
         this.setting = props.setting;
 
         if (this.setting == null) {
             this.setting = {}
         }
-        if(!this.setting.adstatus){
-            this.setting.adstatus={};
+        if (!this.setting.adstatus) {
+            this.setting.adstatus = {};
         }
 
         var record = props.record;
-        console.log("RECORD",record);
-
 
         //-------decorate text---------------\\
         var text = record.text || "";
@@ -77,9 +75,10 @@ export default class Record extends React.Component {
         this.state = {
             dislike: false,
             like: false,
-            advertising: record.adv,
             visible: true,
             firstadvertising: true,
+            issaved: false,
+            tooltip: false,
             small: isfull,
             onepost: props.onepost,
             savemenu: props.saved,
@@ -89,15 +88,14 @@ export default class Record extends React.Component {
             ftext: text,
             stext: stext,
             title: title,
+            advertising: record.adv,
             imgs: record.images,
             gname: record.group_title,
             gava: record.gava,
             postid: record.post_id,
             pusturl: record.pusturl,
-            issaved: false,
-            tooltip: false,
             article: record.article || {},
-            time: this.dataparse(this.props.time || "10:40:08 20.03.2018")
+            time: this.dataparse(record.time)
         };
 
 
@@ -137,11 +135,11 @@ export default class Record extends React.Component {
                 adv = 1;
                 this.setState({
                     advertising: true,
-                    savedadvertising:true,
+                    savedadvertising: true,
                     firstadvertising: false,
                 });
                 if (this.state.savemenu) {
-                    this.parents.deletePost();
+                    this.parent.deletePost();
                 }
             }
         }
@@ -158,8 +156,7 @@ export default class Record extends React.Component {
 
         if (adv === 1 && !this.setting.adstatus.markadvpost) {
             this.setState({visible: false});
-        }
-        else if(adv === 1 ) {
+        } else if (adv === 1) {
             if (Cookies.get("new_rds") === "true") {
                 this.setState({tooltip: true});
                 Cookies.set("new_rds", false);
@@ -174,8 +171,7 @@ export default class Record extends React.Component {
             if (saved.indexOf(this.state.postid) > -1) {
                 issave = true;
             }
-        }
-        else {
+        } else {
             localStorage.setItem("listsavedR", "[]");
         }
         var like = false;
@@ -204,6 +200,9 @@ export default class Record extends React.Component {
             advertising: adv
         })
     }
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        // this.parent.forceUpdate();
+    }
 
 
     dataparse(dstr) {
@@ -211,8 +210,7 @@ export default class Record extends React.Component {
         let dat = dstr.split(/[\.:\s]/);
         let month = ["Января", "Февраля", "Марта", "Апреля", "Мая", "Июня", "Июля", "Августа", "Сентября", "Октября", "Ноября", "Декабря"];
         let d = [dat[3], " ", month[dat[4] - 1], " ", dat[0], ":", dat[1], ", ", dat[5], "",];
-        return d
-
+        return d;
     }
 
     textprepare(text, entities) {
@@ -236,13 +234,16 @@ export default class Record extends React.Component {
 
 
             if (e['_'] === "MessageEntityTextUrl") {
-                ds = `<a  href="${e['url']}">${ds}</a>`;
+                ds = `<a rel="external" target="_blank" href="${e['url']}">${ds}</a>`;
             } else if (e['_'] === "MessageEntityUrl") {
-                // console.log(ds);
-                ds = `<a class="url"  href="${ds}">${ds}</a>`;
+                let url = ds;
+                if (url.indexOf("http") < 0) {
+                    url = "http://" + url;
+                }
+                ds = `<a rel="external" target="_blank" class="url"  href="${url}">${ds}</a>`;
             } else if (e['_'] === "MessageEntityMention") {
                 ds = ds.replace("@", "");
-                ds = `<a  href="https://t.me/${ds}">@${ds}</a>`;
+                ds = `<a rel="external" target="_blank" href="https://t.me/${ds}">@${ds}</a>`;
             } else if (e['_'] === "MessageEntityBold") {
                 ds = `<strong>${ds}</strong>`;
             } else if (e['_'] === "MessageEntityItalic") {
@@ -273,8 +274,6 @@ export default class Record extends React.Component {
 
             this.setState({text: this.state.ftext, full: true})
         }
-
-
     }
 
     ruport(info) {
@@ -288,12 +287,16 @@ export default class Record extends React.Component {
     }
 
     sharePost(e) {
+        var main = this;
+        console.log("shere");
         connect.send("VKWebAppShare", {"link": VK_APPS_URL + "#post=" + this.state.postid})
             .catch(() => {
                 console.log(e);
             }).then((r) => {
+
             console.log("share:", r);
         });
+        main.ruport("repost");
 
     }
 
@@ -322,7 +325,7 @@ export default class Record extends React.Component {
         this.setState({issaved: false});
         if (this.state.savemenu) {
             this.setState({visible: false});
-            this.parents.deletePost();
+            this.parent.deletePost();
         }
     }
 
@@ -331,7 +334,7 @@ export default class Record extends React.Component {
         var saved = localStorage.getItem("listsavedR");
         if (saved != "" && saved != null) {
             saved = JSON.parse(saved);
-            if(saved.indexOf(this.state.postid)<0)
+            if (saved.indexOf(this.state.postid) < 0)
                 saved.unshift(this.state.postid);
             else
                 return;
@@ -340,7 +343,7 @@ export default class Record extends React.Component {
             localStorage.setItem("listsavedR", JSON.stringify([this.state.postid]))
         }
 
-        var s =[];
+        var s = [];
         if (localStorage.getItem("savedR") !== "") {
             s = JSON.parse(localStorage.getItem("savedR"));
             if (Array.isArray(s)) {
@@ -348,8 +351,8 @@ export default class Record extends React.Component {
             }
         }
         localStorage.setItem("savedR", JSON.stringify(s));
-
         this.setState({issaved: true});
+        console.log("Saved");
     }
 
     setparam(name) {
@@ -370,16 +373,16 @@ export default class Record extends React.Component {
         if (name === "advertising") {
             this.unsetparam("unadvertising");
             if (this.state.savemenu) {
-                this.parents.deletePost();
+                this.parent.deletePost();
             }
-            if(!this.setting.adstatus.markadvpost)
+            if (!this.setting.adstatus.markadvpost)
                 this.setState({"visible": false})
         }
         this.ruport(name);
     }
 
     unsetparam(name) {
-        if(name=="advertising")
+        if (name == "advertising")
             this.setparam("unadvertising");
 
 
@@ -402,10 +405,10 @@ export default class Record extends React.Component {
     openSheet() {
         var main = this;
 
-        this.parents.setState({
+        this.parent.setState({
                 popout:
                     <ActionSheet
-                        onClose={() => this.parents.setState({popout: null})}
+                        onClose={() => this.parent.setState({popout: null})}
                         title="Действия"
                         text="Дополнительные действия"
                     >
@@ -436,10 +439,11 @@ export default class Record extends React.Component {
     render() {
 
         return (
-            <ErrorBoundary info={this.state.postid}>
-                {this.state.visible ? <Group>
+            <ErrorBoundary  info={this.state.postid}>
+                {this.state.visible ?
+                    <Group className={"record"}>
                         <Cell className={"postheader"}
-                              before={<Avatar src={this.state.gava} size={54}/>}
+                              before={<Avatar onClick={()=>this.parent.addfilter(this.state.postid,this.state.gname)} src={this.state.gava} size={56}/>}
                               size="l"
                               multiline={true}
                               description={this.state.time}
@@ -457,33 +461,35 @@ export default class Record extends React.Component {
                         <Div>
                             {this.state.text.length > 0 &&
                             <p dangerouslySetInnerHTML={{__html: (this.state.text)}} onClick={this.fullrecord}
-                               className={ "select " + this.state.full ? "fulltextarea" : "textarea"}>
+                               className={"select " + this.state.full ? "fulltextarea" : "textarea"}>
                             </p>
                             }
                         </Div>
 
-
+                        <div>
                         {this.state.imgs.length > 0 && this.state.imgs[0] !== "" &&
-                        <ImageBlok parents={this.parents} imgs={this.state.imgs}/>
+                        <ImageBlok parent={this.parent} imgs={this.state.imgs}/>
                         }
 
                         {this.state.article.img && this.state.article['url'].indexOf("https://t.me/") == -1 && <Div>
-                            <a class="articleSnippet__block">
+                            <div className="articleSnippet__block">
                                 <div className="articleSnippet__thumb"
-                                     style={{"background-image": "url(" + this.state.article['img'] + ")"}}></div>
-                                <div class="articleSnippet__inner">
-                                    <div class="articleSnippet_info">
-                                        <div class="articleSnippet_icon"></div>
-                                        <div class="articleSnippet_title">{this.state.article['title']}</div>
-                                        <div class="articleSnippet_author">{this.state.gname}<span class=""></span></div>
+                                     style={{"backgroundImage": "url(" + this.state.article['img'] + ")"}}></div>
+                                <div className="articleSnippet__inner">
+                                    <div className="articleSnippet_info">
+                                        <div className="articleSnippet_icon"></div>
+                                        <div className="articleSnippet_title">{this.state.article['title']}</div>
+                                        <div className="articleSnippet_author">{this.state.gname}</div>
                                         <a href={this.state.article['url']} className={"url"} target="_blank"
-                                           class="articleSnippet_button">ОТКРЫТЬ
+                                           className="articleSnippet_button">ОТКРЫТЬ
                                         </a>
                                     </div>
                                 </div>
-                            </a>
+                            </div>
+
 
                         </Div>}
+                        </div>
                         {/*{!this.state.article && <hr/>}*/}
 
                         {!this.state.onepost && (this.state.dislike ?
@@ -522,9 +528,9 @@ export default class Record extends React.Component {
                                     onClose={() => this.setState({tooltip: false})}
                                     offsetX={5} alignX={"right"} offsetY={0}
                                 >
-                                    <Button level="tertiary" disabled={this.state.advertising>1} style={{float: "right"}}
+                                    <Button level="tertiary" disabled={this.state.advertising > 1} style={{float: "right"}}
                                             size="m" onClick={() => {
-                                            this.unsetparam("advertising");
+                                        this.unsetparam("advertising");
                                     }}>
 
                                         <Icon24MoneyCircle
@@ -560,15 +566,14 @@ export default class Record extends React.Component {
                         </Button>}
 
 
-
                     </Group>
                     :
                     <React.Fragment>
                         {
                             //&& this.state.firstadvertising
-                            (!this.state.savemenu && !this.setting.adstatus.hideadvpost ) &&
+                            (!this.state.savemenu && !this.setting.adstatus.hideadvpost) &&
                             <Group>
-                                <CellButton expandable={true} onClick={() => {
+                                <CellButton expandable="true" onClick={() => {
                                     if (Cookies.get("new_rds") === "true") {
                                         this.setState({tooltip: true});
                                         Cookies.set("new_rds", false);
