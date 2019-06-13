@@ -103,3 +103,6 @@ img[tabindex="0"]:focus ~ * {
 a {
     color: #2a5885;
 }
+a:active {
+    color: #2a5885; /* Цвет активной ссылки */
+}

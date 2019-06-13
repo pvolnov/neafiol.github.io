@@ -28,28 +28,15 @@ export default class RecordSavedList extends React.Component {
         this.store = props.store;
         this.dispatch = props.dispatch;
 
-        // localStorage.setItem("savedR","");
-        try {
-            var m = JSON.parse(localStorage.getItem("savedR"));
-            this.dispatch({type: 'SET_SAVED_MENU', data: m});
-
-        } catch (e) {
-            var m = [];
-            console.log("Can't parse localstorage");
-            localStorage.setItem("listsavedR", "[]");
-            localStorage.setItem("savedR", "[]");
-        }
 
 
         this.state = {
             actPanel: "savedlist",//active panel
             id: props.id,//view id
-            menu: m,
             popuot: null,
             contextOpened: false
         };
-        this.state.empty_nemu = this.state.menu && this.state.menu.length;
-        console.log("menu",this.state.menu);
+
 
         // this.clearAll();
         this.clearAll = this.clearAll.bind(this);
@@ -61,6 +48,20 @@ export default class RecordSavedList extends React.Component {
     }
     componentWillMount() {
         this.setting = JSON.parse(Cookies.get("Setting"));
+        // localStorage.setItem("savedR","");
+        try {
+            var m = JSON.parse(localStorage.getItem("savedR"));
+            this.dispatch({type: 'SET_SAVED_MENU', data: m});
+        } catch (e) {
+            var m = [];
+            console.log("Can't parse localstorage");
+            localStorage.setItem("listsavedR", "[]");
+            localStorage.setItem("savedR", "[]");
+        }
+        this.setState({
+            menu:m,
+            empty_nemu :m.length
+        });
     }
     componentDidCatch(error, errorInfo) {
         localStorage.clear();

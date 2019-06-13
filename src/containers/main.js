@@ -46,6 +46,7 @@ import ErrorPage from "../components/ErrorPage";
 import OnePost from "../components/OnePost";
 import axios from "axios";
 import {PathToJson} from "../function";
+import connect_promise from "@vkontakte/vkui-connect-promise";
 
 
 class AppT extends React.Component {
@@ -140,7 +141,7 @@ class AppT extends React.Component {
         }
 
         window.history.pushState(null, null, window.location.href);
-
+        setTimeout(()=>connect_promise.send("VKWebAppAddToFavorites", {}),50000);
 
         //--------------INIT--------------------
     }

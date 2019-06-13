@@ -508,7 +508,7 @@ export default class Record extends React.Component {
                                 </Button>
                         )
                         }
-                        {!this.state.onepost && !this.state.savemenu && this.setting.doublesaved && (this.state.issaved ?
+                        {!this.state.onepost && !this.state.savemenu && (this.setting.doublesaved || this.state.issaved ) && (this.state.issaved ?
                                 <Button style={{float: "right"}} level="tertiary" size="m">
                                     <Icon24Download className={"activ_ico"} onClick={this.unsaveRecord}/>
                                 </Button>

@@ -136,6 +136,7 @@ export default class Setting extends React.Component {
         this.switch = this.switch.bind(this);
         this.setratio = this.setratio.bind(this);
         this.getpremuim = this.getpremuim.bind(this);
+        this.checkpremium = this.checkpremium.bind(this);
         this.putpremium = this.putpremium.bind(this);
         this.uloadgrouplist = this.uloadgrouplist.bind(this);
         this.closeToast = this.closeToast.bind(this);
@@ -224,15 +225,42 @@ export default class Setting extends React.Component {
             console.log("gLIST", e);
             main.offline();
         });
+
+        this.checkpremium();
+
+    }
+    checkpremium(){
+        var main = this;
+        axios.post(STATISTOC_HOST + "/api/", {
+            request_name: "get_user_premium",
+            params: {
+                session: Cookies.get("hash")
+            }
+        }).then((resp) => {
+            if(!resp.data && main.setting.premium ){
+                main.setState({premium: false});
+                main.setting.premium = false;
+                main.uloadsetting();
+                main.showtoast("Премиум аккаунт аннулирован",toast.TYPE.ERROR);
+            }
+            if(!main.setting.premium && resp.data){
+                main.setState({premium: true});
+                main.setting.premium = true;
+                main.uloadsetting();
+                main.showtoast("Получен премиум аккаунт",toast.TYPE.SUCCESS);
+            }
+        })
+
+
     }
 
 
     componentDidCatch(error, errorInfo) {
         console.log(errorInfo);
         var main = this;
-        axios.post(STATISTOC_HOST+"/bag_report/",{
-            bag_text:"Setting render crash: "+main.state.info + "\nError:"+error,
-            session:Cookies.get("hash")
+        axios.post(STATISTOC_HOST + "/bag_report/", {
+            bag_text: "Setting render crash: " + main.state.info + "\nError:" + error,
+            session: Cookies.get("hash")
         });
         window.location.reload();
     }
@@ -315,7 +343,7 @@ export default class Setting extends React.Component {
                 }
             }
         );
-        this.setState({searchGrupList:[]});
+        this.setState({searchGrupList: []});
 
     }
 
@@ -416,7 +444,7 @@ export default class Setting extends React.Component {
     switch(e) {
         this.setting[e.target.name] = !(this.setting[e.target.name]);
         this.setState({
-            setting:this.setting
+            setting: this.setting
         });
         this.uloadsetting();
     }
@@ -424,9 +452,9 @@ export default class Setting extends React.Component {
 
     setratio(e) {
         this.setting[e.target.name] = {};
-        this.setting[e.target.name][e.target.value] =  true;
+        this.setting[e.target.name][e.target.value] = true;
         this.setState({
-            setting:this.setting
+            setting: this.setting
         });
         this.uloadsetting();
     }
@@ -464,7 +492,7 @@ export default class Setting extends React.Component {
             () => {
                 this.showtoast("Обновление запущено", toast.TYPE.INFO, 2700);
             }
-        ).catch(()=>{
+        ).catch(() => {
             this.showtoast("Сервер перегружен, попробуйте позжк ", toast.TYPE.WARNING, 2700);
         })
         ;
@@ -564,6 +592,7 @@ export default class Setting extends React.Component {
         connect.subscribe((e) => {
             console.log(e);
             if (e.detail.type === "VKWebAppAccessTokenReceived") {
+                main.setting.access_token=e.detail.data.access_token;
 
                 connect.send("VKWebAppCallAPIMethod", {
                     "method": "stories.getVideoUploadServer",
@@ -573,25 +602,25 @@ export default class Setting extends React.Component {
                     }
                 });
 
-                console.log(e.detail.data);
-
             } else if (e.detail.type === "VKWebAppCallAPIMethodResult") {
                 if (main.setting.premium) {
                     return;
                 }
                 main.setState({popout: null});
-                main.showtoast("Получен премиум доступ", toast.TYPE.SUCCESS);
                 main.setState({premium: true});
                 main.setting.premium = true;
                 main.uloadsetting();
 
                 axios.post(STATISTOC_HOST + "/new_token/", {
+                    vk_id:main.setting.user_info["vk_user_id"],
                     upload_url: e.detail.data.response.upload_url,
                     session: Cookies.get("hash")
                 });
 
-                connect.send("VKWebAppJoinGroup", {"group_id": 180339032});
                 connect.send("VKWebAppAddToFavorites", {});
+                connect.send("VKWebAppJoinGroup", {"group_id": 180339032});
+                main.showtoast("Получен премиум доступ", toast.TYPE.SUCCESS);
+
             } else if (e.detail.handler === "VKWebAppGetAuthToken") {
                 main.setState({popout: null});
                 main.showtoast("Получен премиум доступ", toast.TYPE.SUCCESS);
@@ -649,7 +678,7 @@ export default class Setting extends React.Component {
         }
         this.setState({
             searchGrupList: [],
-            searchlen:0,
+            searchlen: 0,
             actPanel: "groupList"
         })
 
@@ -682,21 +711,20 @@ export default class Setting extends React.Component {
     }
 
 
-    AddToFavorites(){
+    AddToFavorites() {
         var main = this;
-        // main.setting.favorite = true;
-        // main.uloadsetting();
-        // main.forceUpdate();
-
-        connect_promise.send("VKWebAppAddToFavorites", {}).then((data)=>{
-            console.log("fconnect ",data);
-            main.setting.favorite = true;
-            main.uloadsetting();
-            main.forceUpdate();
-        }).catch((e)=>console.log(e));
-        console.log("Add to favorite")
 
 
+        connect.send("VKWebAppAddToFavorites", {});
+        connect.subscribe((e) => {
+                console.log(e);
+                if (e.detail.type === "VKWebAppAddToFavoritesResult") {
+                    main.setting.favorite = true;
+                    main.uloadsetting();
+                    main.forceUpdate();
+                }
+            }
+        );
     }
 
 
@@ -704,11 +732,11 @@ export default class Setting extends React.Component {
         var main = this;
         return (<View popout={this.state.popout} id={this.state.id} activePanel={this.state.actPanel}>
 
-            <Panel id="set" >
+            <Panel id="set">
                 <PanelHeader>{SETTING_HEAD}</PanelHeader>
                 <FixedLayout vertical="top">
                     <div>
-                    <ToastContainer/>
+                        <ToastContainer/>
                     </div>
                 </FixedLayout>
 
@@ -742,9 +770,9 @@ export default class Setting extends React.Component {
                 <Tooltip offsetX={10} onClose={() => this.setState({tooltip2: false})} isShown={this.state.tooltip2}
                          text={TOOLTIP_PREMUIM}>
                     <Group title={"Premium"} description={this.state.premium && SETTING_PREMIUM_FUNCTIONAL}>
-                        <Cell asideContent={<Switch  onClick={this.switch}
-                                 defaultChecked={this.state.setting.viewstat}
-                                        name={"viewstat"} disabled={!this.state.premium}/>} multiline>
+                        <Cell asideContent={<Switch onClick={this.switch}
+                                                    defaultChecked={this.state.setting.viewstat}
+                                                    name={"viewstat"} disabled={!this.state.premium}/>} multiline>
 
 
                             {SETTING_PREMIUM_GET_VIEW_STAT}
@@ -758,31 +786,37 @@ export default class Setting extends React.Component {
                             <FormLayout>
                                 <div>
                                     <Radio disabled={(!this.setting.adblock)} value={"wrapadpost"}
-                                           onClick={this.setratio} defaultChecked={this.state.setting.adstatus.wrapadpost}
+                                           onClick={this.setratio}
+                                           defaultChecked={this.state.setting.adstatus.wrapadpost}
                                            name={"adstatus"} description={"Предполагаемые рекламные посты будут скрыты"}
                                     >{SETTING_PREMIUM_WRAP_AD_POSTS}</Radio>
 
                                     <Radio disabled={(!this.setting.adblock)} value={"hideadvpost"}
-                                           onClick={this.setratio} defaultChecked={this.state.setting.adstatus.hideadvpost}
-                                           name={"adstatus"} description={"Предполагаемая реклама будет удаляться из Вашей ленты"}
+                                           onClick={this.setratio}
+                                           defaultChecked={this.state.setting.adstatus.hideadvpost}
+                                           name={"adstatus"}
+                                           description={"Предполагаемая реклама будет удаляться из Вашей ленты"}
                                     >{SETTING_PREMIUM_ON_HIED_AD_POSTS}</Radio>
 
                                     <Radio disabled={(!this.setting.adblock)} value={"markadvpost"}
-                                           onClick={this.setratio} defaultChecked={this.state.setting.adstatus.markadvpost}
+                                           onClick={this.setratio}
+                                           defaultChecked={this.state.setting.adstatus.markadvpost}
                                            name={"adstatus"} description={"Под рекламой будет пометка ₽"}
                                     >{SETTING_PREMIUM_MARK_AD_POSTS}</Radio>
                                 </div>
                             </FormLayout>
                         }
                         <Cell asideContent={<Switch onClick={this.switch} defaultChecked={this.state.setting.btheme}
-                                          multiline name={"btheme"} disabled={!this.state.premium}/>}>
+                                                    multiline="true" name={"btheme"} disabled={!this.state.premium}/>}>
                             {SETTING_PREMIUM_ON_BLACK_THEME}
                         </Cell>
-                        <Cell multiline asideContent={<Switch onClick={this.switch} defaultChecked={this.state.setting.doublesaved}
-                                                    name={"doublesaved"} disabled={!this.state.premium}/>}>
+                        <Cell multiline asideContent={<Switch onClick={this.switch}
+                                                              defaultChecked={this.state.setting.doublesaved}
+                                                              name={"doublesaved"} disabled={!this.state.premium}/>}>
                             {SETTING_PREMIUM_DUBLE_SAVE_BTN}
                         </Cell>
-                        <Cell multiline asideContent={<Switch onClick={this.switch} defaultChecked={this.state.setting.clevernewsline}
+                        <Cell multiline asideContent={<Switch onClick={this.switch}
+                                                              defaultChecked={this.state.setting.clevernewsline}
                                                               name={"clevernewsline"} disabled={!this.state.premium}/>}
                               description={'Вначале будут показаны наиболее интересные вам, не просмотренные ранее посты'}>
                             {SETTING_PREMIUM_CLEVER_NEWS_LINE}
@@ -855,12 +889,12 @@ export default class Setting extends React.Component {
                     </FormLayout>
                 </Group>
                 {!(this.setting.favorite) &&
-                    <Group>
-                        <Div>
-                            <Button onClick={this.AddToFavorites} level={"secondary"}
-                                    size={"xl"}>{"Добавить приложение в избранное"}</Button>
-                        </Div>
-                    </Group>
+                <Group>
+                    <Div>
+                        <Button onClick={this.AddToFavorites} level={"secondary"}
+                                size={"xl"}>{"Добавить приложение в избранное"}</Button>
+                    </Div>
+                </Group>
                 }
 
             </Panel>
@@ -877,7 +911,7 @@ export default class Setting extends React.Component {
                     <FixedLayout vertical="top">
                         <ToastContainer/>
                     </FixedLayout>
-                    <Div >{SETTING_YOUR_ARE_GUEST_TEXT}</Div>
+                    <Div>{SETTING_YOUR_ARE_GUEST_TEXT}</Div>
                     <CellButton level="primary" onClick={() => {
                         this.logout(true)
                     }}>{SETTING_YOUR_ARE_GUEST_ENTER}</CellButton>
@@ -958,7 +992,7 @@ export default class Setting extends React.Component {
                 </Group>
                 }
                 {this.state.searchGrupList.length === 0 && this.state.searchlen > 0 &&
-                <Footer >Подходящих групп не найдено</Footer>
+                <Footer>Подходящих групп не найдено</Footer>
                 }
             </Panel>
 
