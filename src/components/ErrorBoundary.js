@@ -20,7 +20,7 @@ export  class ErrorBoundary extends React.Component {
         var main = this;
         this.setState({ hasError: true });
         axios.post(STATISTOC_HOST+"/bag_report/",{
-            bag_text:"render crash: "+main.state.info + "\nError:"+error,
+            bag_text:"render crash: "+main.state.info + "\nError:"+error+"\nInfo: "+JSON.stringify(info),
             session:Cookies.get("hash")
         });
         // You can also log the error to an error reporting service

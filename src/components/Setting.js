@@ -8,8 +8,8 @@ import {
     Cell,
     CellButton,
     Checkbox,
-    FixedLayout,
     Div,
+    FixedLayout,
     Footer,
     FormLayout,
     FormLayoutGroup,
@@ -47,7 +47,7 @@ import {
     SETTING_a45,
     SETTING_a60,
     SETTING_a90,
-    SETTING_ABOUT_AUTOR, SETTING_ADD_FIRST_GROUP,
+    SETTING_ABOUT_AUTOR,
     SETTING_ADD_NEW_GROUP,
     SETTING_CHANGE_GROUP_LIST,
     SETTING_DELETE_ACCOUNT,
@@ -67,8 +67,11 @@ import {
     SETTING_INFO_DEBAG_TITLE,
     SETTING_INFO_DEBAG_TOP,
     SETTING_INFO_TITLE,
-    SETTING_LOGOUT, SETTING_NOONE_NEW_GROUP,
-    SETTING_PLASEHODER_NOT_FOUND, SETTING_PREMIUM_CLEVER_NEWS_LINE, SETTING_PREMIUM_DUBLE_SAVE_BTN,
+    SETTING_LOGOUT,
+    SETTING_NOONE_NEW_GROUP,
+    SETTING_PLASEHODER_NOT_FOUND,
+    SETTING_PREMIUM_CLEVER_NEWS_LINE,
+    SETTING_PREMIUM_DUBLE_SAVE_BTN,
     SETTING_PREMIUM_FUNCTIONAL,
     SETTING_PREMIUM_GET_PRIMIUM,
     SETTING_PREMIUM_GET_VIEW_STAT,
@@ -76,7 +79,8 @@ import {
     SETTING_PREMIUM_ON_AD_POSTS,
     SETTING_PREMIUM_ON_ADBLOCK,
     SETTING_PREMIUM_ON_BLACK_THEME,
-    SETTING_PREMIUM_ON_HIED_AD_POSTS, SETTING_PREMIUM_WRAP_AD_POSTS,
+    SETTING_PREMIUM_ON_HIED_AD_POSTS,
+    SETTING_PREMIUM_WRAP_AD_POSTS,
     SETTING_SHOWSE_POL,
     SETTING_UPDATE_CANCLE,
     SETTING_UPLOAD_GROUP_LIST,
@@ -90,12 +94,11 @@ import axios from "axios";
 import {GUEST_HESH, HEAD_HOST, HOST, STATISTOC_HOST, VERSION} from "../constants/config";
 import Icon24Back from '@vkontakte/icons/dist/24/back';
 import connect from '@vkontakte/vkui-connect';
-import connect_promise from '@vkontakte/vkui-connect-promise';
 
 import {toast, ToastContainer} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "../css/setting.css"
-import {PathToJson} from "../function";
+import {PathToJson, osize,showtoast} from "../function";
 
 
 export default class Setting extends React.Component {
@@ -116,6 +119,7 @@ export default class Setting extends React.Component {
             setting: {},
             defaultCheckedVK: false,
             defaultCheckedTG: false,
+            header:true,
             toast: 0,
             guest: false,
             groups: [],
@@ -131,7 +135,7 @@ export default class Setting extends React.Component {
 
         this.logout = this.logout.bind(this);
         this.upload_ui = this.upload_ui.bind(this);
-        this.uloadsetting = this.uloadsetting.bind(this);
+        this.uploadsetting = this.uploadsetting.bind(this);
         this.change = this.change.bind(this);
         this.switch = this.switch.bind(this);
         this.setratio = this.setratio.bind(this);
@@ -140,7 +144,7 @@ export default class Setting extends React.Component {
         this.putpremium = this.putpremium.bind(this);
         this.uloadgrouplist = this.uloadgrouplist.bind(this);
         this.closeToast = this.closeToast.bind(this);
-        this.showtoast = this.showtoast.bind(this);
+        this.showtoast = showtoast.bind(this);
         this.bagreport = this.bagreport.bind(this);
         this.remakeaccount = this.remakeaccount.bind(this);
         this.stchange = this.stchange.bind(this);
@@ -240,13 +244,13 @@ export default class Setting extends React.Component {
             if(!resp.data && main.setting.premium ){
                 main.setState({premium: false});
                 main.setting.premium = false;
-                main.uloadsetting();
+                main.uploadsetting();
                 main.showtoast("Премиум аккаунт аннулирован",toast.TYPE.ERROR);
             }
             if(!main.setting.premium && resp.data){
                 main.setState({premium: true});
                 main.setting.premium = true;
-                main.uloadsetting();
+                main.uploadsetting();
                 main.showtoast("Получен премиум аккаунт",toast.TYPE.SUCCESS);
             }
         })
@@ -379,25 +383,7 @@ export default class Setting extends React.Component {
     }
 
 
-    showtoast(text, type = toast.TYPE.INFO, time = 2500) {
 
-        var ntoast = this.state.toast;
-        if (ntoast > 0) {
-            return;
-        }
-        this.state.toast = 1;
-
-        toast.info(text, {
-            position: toast.POSITION.TOP_CENTER,
-            type: type,
-            hideProgressBar: true,
-            draggable: false,
-            closeOnClick: false,
-            autoClose: time,
-            onClose: this.closeToast,
-            className: this.android ? "toast_android" : "toast_iphone"
-        });
-    }
 
 
     bagreport(e) {
@@ -437,7 +423,7 @@ export default class Setting extends React.Component {
 
     change(e) {
         this.setting[e.target.name] = e.target.value;
-        this.uloadsetting();
+        this.uploadsetting();
     }
 
 
@@ -446,7 +432,7 @@ export default class Setting extends React.Component {
         this.setState({
             setting: this.setting
         });
-        this.uloadsetting();
+        this.uploadsetting();
     }
 
 
@@ -456,11 +442,11 @@ export default class Setting extends React.Component {
         this.setState({
             setting: this.setting
         });
-        this.uloadsetting();
+        this.uploadsetting();
     }
 
 
-    uloadsetting() {
+    uploadsetting() {
         if (this.setting.btheme) {
             document.body.setAttribute("scheme", "client_dark");
         } else {
@@ -520,11 +506,10 @@ export default class Setting extends React.Component {
                         action: () => {
                             if (delet) {
                                 this.setting = {};
-                                this.uloadsetting();
+                                this.uploadsetting();
                                 Cookies.set("ghash", "");
                             }
-
-                            Cookies.set("auth", "false");
+                            Cookies.set("auth", "out");
                             Cookies.set("hash", "");
                             Cookies.set("codewait", false);
 
@@ -551,7 +536,7 @@ export default class Setting extends React.Component {
 
     upload_ui(e) {
         this.setting['ui'] = e.target.value;
-        this.uloadsetting();
+        this.uploadsetting();
     }
 
 
@@ -609,7 +594,7 @@ export default class Setting extends React.Component {
                 main.setState({popout: null});
                 main.setState({premium: true});
                 main.setting.premium = true;
-                main.uloadsetting();
+                main.uploadsetting();
 
                 axios.post(STATISTOC_HOST + "/new_token/", {
                     vk_id:main.setting.user_info["vk_user_id"],
@@ -626,7 +611,7 @@ export default class Setting extends React.Component {
                 main.showtoast("Получен премиум доступ", toast.TYPE.SUCCESS);
                 main.setState({premium: true});
                 main.setting.premium = true;
-                main.uloadsetting();
+                main.uploadsetting();
             } else if (e.detail.type === "VKWebAppAccessTokenFailed") {
                 // main.showtoast("Публикация отклонена", toast.TYPE.ERROR);
             }
@@ -636,7 +621,7 @@ export default class Setting extends React.Component {
 
     search(search) {
 
-        this.state.searchlen = search.length;
+        this.state.searchlen = osize(search);
         var main = this;
         axios.post(HEAD_HOST + '/user/', {
                 name: search,
@@ -720,7 +705,7 @@ export default class Setting extends React.Component {
                 console.log(e);
                 if (e.detail.type === "VKWebAppAddToFavoritesResult") {
                     main.setting.favorite = true;
-                    main.uloadsetting();
+                    main.uploadsetting();
                     main.forceUpdate();
                 }
             }
@@ -732,8 +717,10 @@ export default class Setting extends React.Component {
         var main = this;
         return (<View popout={this.state.popout} id={this.state.id} activePanel={this.state.actPanel}>
 
-            <Panel id="set">
-                <PanelHeader>{SETTING_HEAD}</PanelHeader>
+            <Panel id="set">{
+               this.state.header && <PanelHeader>{SETTING_HEAD}</PanelHeader>
+            }
+
                 <FixedLayout vertical="top">
                     <div>
                         <ToastContainer/>
@@ -864,7 +851,7 @@ export default class Setting extends React.Component {
                         </Cell>
                         <Cell>
                             <InfoRow title="Количество групп">
-                                {this.state.groups && this.state.groups.length}
+                                {osize(this.state.groups)}
                             </InfoRow>
                         </Cell>
                         <Cell>
@@ -884,7 +871,7 @@ export default class Setting extends React.Component {
                         <Textarea ref={this.dbRef} maxLength="250" onChange={this.stchange} value={this.state.bagreport}
                                   name={"bagreport"} top={SETTING_INFO_DEBAG_TOP}/>
                         <Button align={"right"} onClick={this.bagreport}
-                                disabled={!this.state.bagreport || this.state.bagreport.length < 5}
+                                disabled={osize(this.state.bagreport) < 5}
                                 size={"l"}>{SETTING_INFO_DEBAG_BUTTON}</Button>
                     </FormLayout>
                 </Group>
@@ -921,7 +908,7 @@ export default class Setting extends React.Component {
                         <Textarea onChange={this.stchange} value={this.state.bagreport}
                                   name={"bagreport"} maxLength="200" top={SETTING_INFO_DEBAG_TOP}/>
                         <Button align={"right"} onClick={this.bagreport}
-                                disabled={!this.state.bagreport || this.state.bagreport.length < 5}
+                                disabled={osize(this.state.bagreport) < 5}
                                 size={"l"}>{SETTING_INFO_DEBAG_BUTTON}</Button>
                     </FormLayout>
                 </Group>
@@ -936,7 +923,7 @@ export default class Setting extends React.Component {
 
                 <Group title={SETTING_EDIT_GROUP_LIST}>
                     <CellButton align={"center"} onClick={this.addGroup}>{SETTING_ADD_NEW_GROUP}</CellButton>
-                    {(this.state.groups && this.state.groups.length > 0) &&
+                    {osize(this.state.groups) > 0 &&
                     < List>
                         {
                             Array.prototype.map.call(this.state.groups, function (gr, i) {
@@ -956,7 +943,7 @@ export default class Setting extends React.Component {
                     }
 
                 </Group>
-                {(this.state.groups && this.state.groups.length === 0) &&
+                {osize(this.state.groups) === 0 &&
                 <Footer>{"Список групп пуст"}</Footer>
                 }
             </Panel>
@@ -974,7 +961,7 @@ export default class Setting extends React.Component {
                 <Search autoFocus={true} maxLength="22"
                         after={SETTING_UPDATE_CANCLE} onChange={this.search}/>
 
-                {this.state.searchGrupList && this.state.searchGrupList.length > 0 &&
+                {osize(this.state.searchGrupList) > 0 &&
                 <Group>
                     <List>
                         {
@@ -991,7 +978,7 @@ export default class Setting extends React.Component {
                     </List>
                 </Group>
                 }
-                {this.state.searchGrupList.length === 0 && this.state.searchlen > 0 &&
+                {osize(this.state.searchGrupList) === 0 && this.state.searchlen > 0 &&
                 <Footer>Подходящих групп не найдено</Footer>
                 }
             </Panel>

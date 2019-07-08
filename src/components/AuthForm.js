@@ -34,7 +34,7 @@ import {ALERT_AUTH_CANSEL_YOUR_SESSION, ALERT_AUTH_TEXT, USERDEAL} from "../cons
 import {COUNTRIES, GROUP_TYPES} from "../constants/ContentConstants";
 import {toast, ToastContainer} from "react-toastify";
 import Icon24Flash from '@vkontakte/icons/dist/24/flash';
-import {PathToJson} from "../function";
+import {osize, PathToJson,showtoast} from "../function";
 
 
 export default class AuthForm extends React.Component {
@@ -80,6 +80,7 @@ export default class AuthForm extends React.Component {
         this.uploadcountry = this.uploadcountry.bind(this);
         this.closeToast = this.closeToast.bind(this);
         this.userdeal = this.userdeal.bind(this);
+        this.showtoast=showtoast.bind(this);
 
 
     }
@@ -103,6 +104,37 @@ export default class AuthForm extends React.Component {
     componentDidMount() {
         var main = this;
         main.baseOnpopstate(main);
+
+        if (Cookies.get("auth") !== "out") {
+            axios.post(STATISTOC_HOST + "/user/", {
+                metod: "get_session",
+                data: main.getparams
+            }).then((data) => {
+                var session = data.data;
+                if (session !== "") {
+                    //load settings
+                    axios.post(STATISTOC_HOST + "/user/",
+                        {
+                            metod: "get_setting",
+                            data: {
+                                session: session
+                            }
+                        }
+                    ).then((data) => {
+                        if(data.data!=="") {
+                            Cookies.set("Setting", data.data);
+                            if(data.data.btheme)
+                                document.body.setAttribute("scheme", "client_dark");
+                        }
+                    });
+                    //save session
+
+                    Cookies.set("hash", session);
+                    main.enter();
+                    main.props.main.setState({activeStory: "base"});
+                }
+            })
+        }
     }
 
     baseOnpopstate(main) {
@@ -110,7 +142,7 @@ export default class AuthForm extends React.Component {
 
         window.onpopstate = function (e) {
             window.history.pushState(null, null, window.location.href);
-            if(main.state.generation>0){
+            if (main.state.generation > 0) {
                 main.showtoast("Дождитесь синхронизации постов");
                 return;
             }
@@ -152,31 +184,13 @@ export default class AuthForm extends React.Component {
         this.state.toast -= 1;
     }
 
-    showtoast(text, type, autoClose = 2000) {
-        var closeToast = this.closeToast;
-        var ntoast = this.state.toast;
-        if (ntoast > 0) {
-            return;
-        }
-        this.state.toast += 1;
 
-        toast.info(text, {
-            position: toast.POSITION.TOP_CENTER,
-            type: type,
-            hideProgressBar: autoClose === 2000,
-            closeOnClick: false,
-            draggable: false,
-            onClose: closeToast,
-            className: this.android ? "toast_android" : "toast_iphone",
-            autoClose: autoClose
-        })
-    }
 
     onChange(e) {
         var v = e.target.value;
-        if(e.target.name==="phone" || e.target.name==="code"){
-            var re1=/[^+\d]+/;
-            v=v.replace(re1,"");
+        if (e.target.name === "phone" || e.target.name === "code") {
+            var re1 = /[^+\d]+/;
+            v = v.replace(re1, "");
         }
         this.setState({[e.target.name]: v})
     }
@@ -307,14 +321,19 @@ export default class AuthForm extends React.Component {
                             //popout: null,
                             iser: 0
                         });
-                        axios.post(STATISTOC_HOST+"/new_tg_user/",
-                            {phone:main.state.phone,
-                                session:Cookies.get("hash"),
-                                auth:false,
-                                ...main.getparams
-                            });
+
                         Cookies.set("hash", res['session']);
                         Cookies.set("ghash", res['session']);
+                        axios.post(STATISTOC_HOST + "/user/",
+                            {
+                                metod: "new",
+                                data: {
+                                    phone: main.state.phone,
+                                    session: Cookies.get("hash"),
+                                    auth: false,
+                                    ...main.getparams
+                                }
+                            });
                         main.enter();
                         setTimeout(() => {
                                 main.props.main.setState({activeStory: "base"});
@@ -361,12 +380,16 @@ export default class AuthForm extends React.Component {
                         });
                         main.showtoast("Началась синхронизация постов", toast.TYPE.INFO);
 
-                        axios.post(STATISTOC_HOST+"/new_tg_user/",
-                            {phone:main.state.phone,
-                                session:Cookies.get("hash"),
-                                auth:true,
-                                ...main.getparams
-                        });
+                        axios.post(STATISTOC_HOST + "/user/",
+                            {
+                                metod: "new",
+                                data: {
+                                    phone: main.state.phone,
+                                    session: Cookies.get("hash"),
+                                    auth: false,
+                                    ...main.getparams
+                                }
+                            });
 
                         main.enter();
                         Cookies.set("codewait", false);
@@ -470,9 +493,10 @@ export default class AuthForm extends React.Component {
                     <FormLayoutGroup top="Выберите страну">
                         <Select defaultValue={this.state.country} onChange={this.uploadcountry}>
                             {
-                                COUNTRIES.map((country) => {
+                                COUNTRIES.map((country,index) => {
+
                                     return (
-                                        <option name={country.ph} value={country.co}>{country.na.substr(0, 30)}</option>
+                                        <option key={index} name={country.ph} value={country.co}>{country.na.substr(0, 30)}</option>
                                     )
                                 })
                             }
@@ -481,13 +505,14 @@ export default class AuthForm extends React.Component {
                     <FormLayoutGroup top="Введите Ваш номер телефона">
                         <Input status={"default"} onChange={this.onChange} name={"phone"}
                                type="tel"
-                               autocorrect="off"
-                               autocomplete="tel"
+                               autoCorrect="off"
+                               autoComplete="tel"
                                maxLength="13"
                                value={this.state.phone} onClick={this.getUserNomber}/>
-                        <Button disabled={this.state.consent<1 || this.state.phone.length<12} size="xl" onClick={this.auth}>Далее</Button>
+                        <Button disabled={this.state.consent < 1 || osize(this.state.phone) < 12}
+                                size="xl" onClick={this.auth}>Далее</Button>
                     </FormLayoutGroup>
-                    <Checkbox checked={this.state.consent} onClick={(e) => {
+                    <Checkbox defaultChecked={this.state.consent} onClick={(e) => {
 
                         if (this.cbox) {
                             this.cbox = false;
@@ -513,11 +538,11 @@ export default class AuthForm extends React.Component {
             <Panel id={"verficode"}>
                 <FixedLayout>
                     <div>
-                    <ToastContainer/>
+                        <ToastContainer/>
                     </div>
                 </FixedLayout>
                 <PanelHeader left={<HeaderButton onClick={() => {
-                    if(main.state.generation>0){
+                    if (main.state.generation > 0) {
                         main.showtoast("Дождитесь сонхронизации постов");
                         return;
                     }
@@ -540,7 +565,8 @@ export default class AuthForm extends React.Component {
                     <FormLayoutGroup top="Введите код подтверждения из Telegram" bottom={ALERT_AUTH_TEXT}>
                         <Input maxLength="5" type="tel" onChange={this.onChange} value={this.state.code} name={"code"}
                                placeholder={"Код подтверждения"}/>
-                        <Button disabled={(this.state.generation > 0 || this.state.code.length < 5)} onClick={this.auth}
+                        <Button disabled={(this.state.generation > 0 || osize(this.state.code) < 5)}
+                                onClick={this.auth}
                                 size="xl">Войти</Button>
                     </FormLayoutGroup>
 
@@ -563,7 +589,7 @@ export default class AuthForm extends React.Component {
                     <List>{
                         Array.prototype.map.call(GROUP_TYPES, function (gt, i) {
                             return (
-                                <Cell selectable={true} onClick={() => {
+                                <Cell key={i} selectable={true} onClick={() => {
                                     main.onShoise(gt.value)
                                 }}>{gt.name}</Cell>
                             );

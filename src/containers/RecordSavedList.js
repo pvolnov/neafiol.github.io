@@ -21,13 +21,15 @@ import Icon16Dropdown from '@vkontakte/icons/dist/16/dropdown';
 import connect from "@vkontakte/vkui-connect-promise";
 import {IOS} from "@vkontakte/vkui/src/lib/platform";
 import Cookies from "js-cookie";
+import {osize} from "../function";
+import {HEAD_HOST, STATISTOC_HOST} from "../constants/config";
+import axios from "axios";
 
 export default class RecordSavedList extends React.Component {
     constructor(props) {
         super(props);
         this.store = props.store;
         this.dispatch = props.dispatch;
-
 
 
         this.state = {
@@ -46,23 +48,12 @@ export default class RecordSavedList extends React.Component {
         this.android = platform() == "android";
 
     }
+
     componentWillMount() {
         this.setting = JSON.parse(Cookies.get("Setting"));
         // localStorage.setItem("savedR","");
-        try {
-            var m = JSON.parse(localStorage.getItem("savedR"));
-            this.dispatch({type: 'SET_SAVED_MENU', data: m});
-        } catch (e) {
-            var m = [];
-            console.log("Can't parse localstorage");
-            localStorage.setItem("listsavedR", "[]");
-            localStorage.setItem("savedR", "[]");
-        }
-        this.setState({
-            menu:m,
-            empty_nemu :m.length
-        });
     }
+
     componentDidCatch(error, errorInfo) {
         localStorage.clear();
         console.log("Error");
@@ -71,9 +62,9 @@ export default class RecordSavedList extends React.Component {
 
     componentDidMount() {
         var main = this;
-        window.scrollTo( 0, this.store.y  );
-
-        window.onpopstate = function(e) {
+        window.scrollTo(0, this.store.y);
+        setTimeout(()=>window.scrollTo(0, this.store.y),1);
+        window.onpopstate = function (e) {
             window.history.pushState(null, null, window.location.href);
             main.setState({
                 popout:
@@ -89,7 +80,7 @@ export default class RecordSavedList extends React.Component {
 
                             },
                             autoclose: true,
-                            style:"destructive"
+                            style: "destructive"
                         }]}
                         onClose={() => {
                             main.setState({popout: null});
@@ -104,8 +95,45 @@ export default class RecordSavedList extends React.Component {
         };
         window.onscroll = () => {
             var posTop = (window.pageYOffset !== undefined) ? window.pageYOffset : (document.documentElement).scrollTop;
+            // console.log(posTop);
             main.dispatch({type: 'SET_SAVED_Y', data: posTop});
         };
+
+        if(osize(this.store.menu)>0){
+            this.setState({
+                menu: this.store.menu
+            });
+            return;
+        }
+
+        try {
+            this.setState({
+                popout: <ScreenSpinner/>,
+            });
+
+            var main = this;
+            axios.post(STATISTOC_HOST + '/api/', {
+                    request_name: "get_saved_posts",
+                    params: {
+                        session: Cookies.get('hash')
+                    }
+                }
+            ).then((res) => {
+                var m = res.data.posts;
+                main.setState({
+                    menu: m,
+                    empty_nemu: osize(m),
+                    popout: null
+                });
+                this.dispatch({type: 'SET_SAVED_MENU', data: m});
+            }).catch((e) => console.log(e));
+
+        } catch (e) {
+
+            // this.b("Can't parse localstorage");
+            localStorage.setItem("listsavedR", "[]");
+            localStorage.setItem("savedR", "[]");
+        }
 
     }
 
@@ -123,6 +151,16 @@ export default class RecordSavedList extends React.Component {
                         action: () => {
                             localStorage.setItem("savedR", "[]");
                             localStorage.setItem("listsavedR", "[]");
+
+                            axios.post(STATISTOC_HOST + "/raport/", {
+                                session: Cookies.get("hash"),
+                                info: {
+                                    type: "unsavedall",
+                                    data: "all"
+                                }
+                            });
+                            this.dispatch({type: 'SET_SAVED_MENU', data: []});
+
                             main.setState({
                                 menu: [],
                                 contextOpened: false,
@@ -130,7 +168,7 @@ export default class RecordSavedList extends React.Component {
                             })
                         },
                         autoclose: true,
-                        style:"destructive"
+                        style: "destructive"
 
                     }]}
                     onClose={() => {
@@ -152,16 +190,16 @@ export default class RecordSavedList extends React.Component {
 
         for (let i in menu) {
             let item = menu[i];
-                rlist.push(
-                    <div key={i} role={"StatisticInfo"} identy={item['post_id']} type={item['type'] || 0}>
-                        <Record
-                            saved={true}
-                            parent={main}
-                            record={item}
-                            setting={this.setting}
-                        />
-                    </div>
-                );
+            rlist.push(
+                <div key={i} role={"StatisticInfo"} identy={item['post_id']} type={item['type'] || 0}>
+                    <Record
+                        saved={true}
+                        parent={main}
+                        record={item}
+                        setting={this.setting}
+                    />
+                </div>
+            );
 
 
         }
@@ -185,7 +223,8 @@ export default class RecordSavedList extends React.Component {
             <View id={this.state.id} popout={this.state.popout} activePanel={this.state.actPanel}>
                 <Panel id="savedlist">
                     <PanelHeader>
-                        <PanelHeaderContent disabled={this.state.empty_nemu < 1} aside={(this.state.empty_nemu > 0) && <Icon16Dropdown/>}
+                        <PanelHeaderContent disabled={this.state.empty_nemu < 1}
+                                            aside={(this.state.empty_nemu > 0) && <Icon16Dropdown/>}
                                             onClick={this.toggleContext}>
                             Сохраненные посты
                         </PanelHeaderContent>

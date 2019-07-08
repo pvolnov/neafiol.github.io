@@ -4,15 +4,8 @@ import Cookies from "js-cookie";
 
 export default function reload(main) {
 
-    axios.post(WEB_HOST + '/webinfo/', {
-        },
-    ).then((r)=> {
-            console.log("reload");
-            window.location.reload();
-        }
-    ).catch((e)=>{
-        main.offline();
-        return false;
-    });
+    if (window.navigator.onLine){
+        window.location.reload();
+    }
 
 }

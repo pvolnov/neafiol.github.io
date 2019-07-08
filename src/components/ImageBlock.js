@@ -2,6 +2,7 @@ import React from "react";
 import Gallery from "react-photo-gallery"
 import Lightbox from 'react-images';
 import {Alert} from "./Setting";
+import {osize} from "../function";
 
 
 export class ImageBlok extends React.Component {
@@ -14,8 +15,9 @@ export class ImageBlok extends React.Component {
         if (this.props.imgs != null)
             imges = this.props.imgs;
 
+
         //first photo is big
-        if (imges.length === 1 || imges.length === 5 || imges.length === 7) {
+        if (osize(imges) === 1 || osize(imges) === 5 || osize(imges) === 7) {
             fm = {};
             // console.log(imges.length,"TO");
             fm.img = new Image();
@@ -145,7 +147,7 @@ export class ImageBlok extends React.Component {
                     ))
                 }
                 </React.Fragment>
-                <Gallery columns={(photos.length % 3 > 0) ? 2 : 3} margin={1} photos={photos}
+                <Gallery columns={(osize(photos) % 3 > 0) ? 2 : 3} margin={1} photos={photos}
                          onClick={this.openLightbox}/>
                 <Lightbox images={photos}
                           imageCountSeparator={" из "}

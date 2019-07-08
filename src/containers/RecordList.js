@@ -25,6 +25,7 @@ import {toast, ToastContainer} from "react-toastify";
 import Icon24Back from '@vkontakte/icons/dist/24/back';
 import Icon28ChevronBack from '@vkontakte/icons/dist/28/chevron_back';
 import {IOS} from "@vkontakte/vkui/src/lib/platform";
+import {osize, showtoast} from "../function";
 
 
 export default class RecordList extends React.Component {
@@ -57,7 +58,7 @@ export default class RecordList extends React.Component {
         this.createRecords = this.createRecords.bind(this);
         this.renderRow = this.renderRow.bind(this);
         this.updatemarking = this.updatemarking.bind(this);
-        this.showtoast = this.showtoast.bind(this);
+        this.showtoast = showtoast.bind(this);
         this.closeToast = this.closeToast.bind(this);
         this.refresh = this.refresh.bind(this);
         this.offline = this.offline.bind(this);
@@ -74,14 +75,19 @@ export default class RecordList extends React.Component {
         this.listRef=[];
         this.android = platform() == "android";
     }
+
+
     updatemarking() {
         console.log("update");
         // this.cache.clearAll();
         // this._list.recomputeRowHeights();
     }
+
+
     componentDidUpdate(prevProps, prevState, snapshot) {
         // this.updatemarking();
     }
+
 
     componentWillMount() {
         if (Cookies.get("Setting") != null)
@@ -95,12 +101,10 @@ export default class RecordList extends React.Component {
             window.scrollTo(0, main.store.y);
             // main.listRef.current.scrollToItem(main.store.y);
         }, 0);
-    }
 
-    componentDidMount() {
         console.log("RECORD LIST");
         if (this.store.list)
-            if (this.store.list.length < 2) {
+            if (osize(this.store.list) < 2) {
                 this.uploadnews(-1);
                 setTimeout(this.getstatistic, 2000, [], 0);
             } else {
@@ -124,10 +128,14 @@ export default class RecordList extends React.Component {
             }
         };
         this.baseOnpopstate(main);
-
         window.history.pushState(null, null, window.location.href);
 
     }
+
+
+    componentDidMount() {
+    }
+
 
     refresh() {
         if (window.navigator.onLine) {
@@ -150,6 +158,7 @@ export default class RecordList extends React.Component {
         }, 3500);
         this.uploadnews(-1);
     }
+
 
     baseOnpopstate(main) {
         window.onpopstate = (e) => {
@@ -184,9 +193,11 @@ export default class RecordList extends React.Component {
         };
     }
 
+
     closeToast() {
         this.state.toast -= 1;
     }
+
 
     offline() {
         if (this.state.offline) {
@@ -196,24 +207,6 @@ export default class RecordList extends React.Component {
         // this.showtoast("Сервер не отвечает",toast.TYPE.ERROR);
     }
 
-    showtoast(text, type = toast.TYPE.INFO, autoClose = 2000) {
-        var closeToast = this.closeToast;
-        var ntoast = this.state.toast;
-        if (ntoast > 0) {
-            return;
-        }
-        this.state.toast += 1;
-        toast.info(text, {
-            position: toast.POSITION.TOP_CENTER,
-            type: type,
-            closeOnClick: false,
-            hideProgressBar: true,
-            draggable: false,
-            onClose: closeToast,
-            className: (this.android ? "toast_android" : "toast_iphone"),
-            autoClose: autoClose
-        })
-    }
 
     getstatistic(mas, n) {
         let delaytime = 450;
@@ -287,7 +280,7 @@ export default class RecordList extends React.Component {
             if(this.cond.allTpost){
                 return;
             }
-            var post_now = this.state.tmenu && this.state.menu.length;
+            var post_now = osize(this.state.menu);
 
             this.httpClient.post(HEAD_HOST + '/get/', {
                     amount:30,
@@ -305,7 +298,7 @@ export default class RecordList extends React.Component {
                     return;
                 }
                 res = res.data;
-                if(res['posts'].length<1){
+                if(osize(res['posts'])<1){
                     main.cond.allTpost=true;
                     return;
                 }
@@ -340,14 +333,13 @@ export default class RecordList extends React.Component {
         }
 
 
-        var post_now = this.state.menu && this.state.menu.length;
+        var post_now = osize(this.state.menu);
 
         // console.log("AUTAPLOAD ", type);
         this.setState({
             isuploading: true,
             fetching: false
         });
-
 
         switch (type) {
             case 0: {
@@ -356,7 +348,7 @@ export default class RecordList extends React.Component {
                 }
 
                 var count = 150;
-                post_now = this.store.full_list && this.store.full_list.length;
+                post_now = osize(this.store.full_list);
                 main.setState({gloabaluploading: true});
 
 
@@ -375,7 +367,7 @@ export default class RecordList extends React.Component {
                         return;
                     }
                     res = res.data;
-                    if (res['posts'].length < 149) {
+                    if (osize(res['posts']) < 149) {
                         main.setState({
                             stopupload: true
                         });
@@ -425,7 +417,7 @@ export default class RecordList extends React.Component {
                 }, 2000);
 
                 var full_list = this.store.full_list;
-                if (full_list.length < 10)
+                if (osize(full_list) < 10)
                     break;
 
                 for (var i = post_now; i < post_now + 15; i++) {
@@ -435,7 +427,7 @@ export default class RecordList extends React.Component {
                 this.forceUpdate();
                 this.dispatch({type: 'RECORDS_UPDATE', data: this.state.menu.slice()});
 
-                if (full_list.length - 30 < this.state.menu.length) {
+                if (osize(full_list) - 30 < osize(this.state.menu)) {
                     this.uploadnews(0)
                 }
                 this.setState({
@@ -467,7 +459,7 @@ export default class RecordList extends React.Component {
                         fetching: false,
                         popout: null
                     });
-                    if (resp.data.posts.length == 0) {
+                    if (osize(resp.data.posts) === 0) {
                         main.setState({
                             isuploading: false,
                             gloabaluploading: false
@@ -490,6 +482,7 @@ export default class RecordList extends React.Component {
 
 
     }
+
 
     addfilter(filter,gname){
         filter = filter.split("__")[0];
@@ -515,9 +508,12 @@ export default class RecordList extends React.Component {
             main.baseOnpopstate(main);
         }
     }
+
+
     getRecordSize(index){
             return 50;
     }
+
 
     createRecords = (menu) => {
         let rlist = [];
@@ -547,6 +543,8 @@ export default class RecordList extends React.Component {
         }
         return rlist;
     };
+
+
     renderRow({ index, key, style, parent }) {
         // console.log(parent);
         var item = this.state.menu[index];
@@ -579,6 +577,8 @@ export default class RecordList extends React.Component {
             </CellMeasurer >
         );
     }
+
+
     _setListRef = ref => {
         console.log("REF");
         this._list = ref;
@@ -624,14 +624,14 @@ export default class RecordList extends React.Component {
                         (this.state.isuploading || this.state.gloabaluploading) ?
 
                             (
-                                (!this.state.isuploading || this.state.menu && this.state.menu.length > 0) &&
+                                (!this.state.isuploading || osize(this.state.menu) > 0) &&
                                 <Footer>Загрузка...</Footer>
                             )
 
                             :
                             (
 
-                                (this.state.menu && this.state.menu.length === 0) ?
+                                (osize(this.state.menu) === 0) ?
                                     <Footer>У Вас нет групп</Footer>
                                     :
                                     this.state.stopupload && <Footer>Постов больше нет</Footer>

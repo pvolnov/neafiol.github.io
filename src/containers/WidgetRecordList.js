@@ -6,6 +6,7 @@ import {HOST, STATISTOC_HOST} from '../constants/config'
 import Cookies from "js-cookie";
 import * as offline from '../constants/offline'
 import {ALERT_NOT_CONNECT_TEXT,ALERT_NOT_CONNECT_TITLE} from '../constants/TextConstants'
+import {osize} from "../function";
 
 
 export default class WidgetRecordList extends React.Component {
@@ -35,7 +36,7 @@ export default class WidgetRecordList extends React.Component {
     componentDidMount() {
         //--------------INIT---------------
         this.checkserver();
-        if(this.store.list.length<3)
+        if(osize(this.store.list)<3)
             this.uploadnews();
         else {
             this.setState({

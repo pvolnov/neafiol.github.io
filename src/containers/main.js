@@ -74,8 +74,10 @@ class AppT extends React.Component {
     }
     componentWillMount() {
         try {
-            this.setting = JSON.parse(Cookies.get("Setting"));}
+            this.setting = JSON.parse(Cookies.get("Setting"));
+        }
         catch (e) {
+
             this.setting={};
         }
         //Эти настройки обязательно должны быть
@@ -117,12 +119,20 @@ class AppT extends React.Component {
 
         var main = this;
 
-        axios.post(WEB_HOST + '/webinfo/', {
+        axios.post(STATISTOC_HOST + '/user/', {
+            metod:"sinfo",
+            data: {
                 session: Cookies.get('hash'),
+            }
             },
         ).then((r)=> {
+            console.log(r.data.status);
                 if (r.data.status === "sleep") {
-                    main.setState({error_page: true});
+                    console.log("Server Sleep");
+                    main.setState({
+                        error_page: true,
+                        tabbar:null,
+                        activeStory:"epage"});
                     axios.post(STATISTOC_HOST + "/bag_report/", {
                         session: Cookies.get("hash"),
                         bag_text: "Была попытка входа на спящий сервер"
@@ -150,8 +160,9 @@ class AppT extends React.Component {
         window.location.reload(true);
         var vkid = "https://vk.com/id"+this.get["vk_user_id"];
         axios.post(STATISTOC_HOST+"/bag_report/",{
-            bag_text:"render crash: "+vkid+ "\nError:"+error,
-            session:Cookies.get("hash")
+            bag_text:vkid+ "\nError:"+error + "\nInfo: "+JSON.stringify(errorInfo),
+            session:Cookies.get("hash"),
+
         });
     }
 

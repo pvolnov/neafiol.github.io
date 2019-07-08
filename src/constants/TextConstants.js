@@ -20,7 +20,7 @@ export const SETTING_PREMIUM_DUBLE_SAVE_BTN = "Дублировать кнопк
 export const SETTING_PREMIUM_ON_HIED_AD_POSTS = "Не показывать рекламные посты";
 export const SETTING_PREMIUM_WRAP_AD_POSTS = "Сворачивать рекламные посты";
 export const SETTING_PREMIUM_MARK_AD_POSTS = "Помечать рекламные посты";
-export const SETTING_PREMIUM_CLEVER_NEWS_LINE = 'Собирать перосонльную ленту';
+export const SETTING_PREMIUM_CLEVER_NEWS_LINE = 'Собирать персональную ленту';
 export const SETTING_PREMIUM_GET_PRIMIUM= "Получить премиум [бесплатно]";
 
 export const SETTING_UPLOAD_GROUP_LIST = "Обновить список групп";

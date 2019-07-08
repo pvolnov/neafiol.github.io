@@ -36,6 +36,7 @@ import {STATISTOC_HOST, VK_APPS_URL} from "../constants/config";
 import connect from '@vkontakte/vkui-connect-promise';
 import axios from "axios";
 import Cookies from "js-cookie";
+import {osize} from "../function";
 
 
 export default class Record extends React.Component {
@@ -220,7 +221,7 @@ export default class Record extends React.Component {
             return text;
         }
 
-        let lastlet = text.length;
+        let lastlet = osize(text);
 
         for (var e of entities.slice().reverse()) {
 
@@ -327,6 +328,7 @@ export default class Record extends React.Component {
             this.setState({visible: false});
             this.parent.deletePost();
         }
+        this.ruport("unsaved");
     }
 
     saveRecord(e) {
@@ -351,8 +353,9 @@ export default class Record extends React.Component {
             }
         }
         localStorage.setItem("savedR", JSON.stringify(s));
-        this.setState({issaved: true});
         console.log("Saved");
+        this.setState({issaved: true});
+        this.ruport("saved");
     }
 
     setparam(name) {
@@ -459,7 +462,7 @@ export default class Record extends React.Component {
                         >{this.state.gname}</Cell>
 
                         <Div>
-                            {this.state.text.length > 0 &&
+                            {osize(this.state.text) > 0 &&
                             <p dangerouslySetInnerHTML={{__html: (this.state.text)}} onClick={this.fullrecord}
                                className={"select " + this.state.full ? "fulltextarea" : "textarea"}>
                             </p>
@@ -467,7 +470,7 @@ export default class Record extends React.Component {
                         </Div>
 
                         <div>
-                        {this.state.imgs.length > 0 && this.state.imgs[0] !== "" &&
+                        {osize(this.state.imgs) > 0 && this.state.imgs[0] !== "" &&
                         <ImageBlok parent={this.parent} imgs={this.state.imgs}/>
                         }
 
